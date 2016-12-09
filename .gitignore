@@ -1,0 +1,47 @@
+# Next For T3000 ignore
+/T3000 Output
+/T3000 Output_VS2015
+
+**/Debug/
+/**/.svn
+*.pdb
+*.sdf
+*.opensdf
+**/ipch/
+**/Release/
+**/*.bin
+
+**/*.Opt
+**/*.__i
+**/*.obj
+**/*.lnp
+**/*.did
+**/*.csdsig
+**/~*
+**/*.lsp
+**/SpecctraWithinLayout.*
+**/*.SBR
+**/*.s51
+**/*.r51
+**/*.bom
+**/*.MAP
+**/*.build_log.htm
+**/*.uvopt
+**/*._ia
+**/*.plg
+**/*.jrl
+**/*.dbk
+**/*.tmp
+**/*.bak
+**/*.ls1
+**/*.lis
+**/*.SRC
+**/*.log
+**/*.DSNlck
+**/*.M51
+**/*.lock
+**/*.SYM
+**/*.err
+**/*.OLBlck
+**/*.MNL
+**/*.MAX
