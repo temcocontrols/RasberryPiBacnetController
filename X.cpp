@@ -1,3 +1,4 @@
+#ifdef BAS_TEMP
 #define NEW
 #include <windows.h>
 #include "graphics.h"
@@ -6187,4 +6188,4 @@ int writepropertyservice(Point_Net point, T3000PropertyIdentifier property, long
 	return r;
 }
 
-
+#endif //BAS_TEMP
