@@ -1,8 +1,11 @@
-﻿
+﻿/******************************************************************************
+ *                     RASPBERRY PI BACNET CONTROLLER
+ *****************************************************************************/
+ 
 ### Procedure to compile ###
 
 - Unzip the project and copy it to home or any directory of your choice in RPi
-- Browse to src directory
+- Browse to RasberryPiBacnetController directory
 - enter command 'sudo make' to compile code
 - enter command 'sudo make clean' to clean code
 
@@ -11,7 +14,7 @@
 
 - Execute below command after compiling project
 	./BAS_RPi_Port
-- The 'BAS_RPi_Port' linux executable file is located at '../BAS_RPi_Port/src/' path
+- The 'BAS_RPi_Port' linux executable file is located at '../RasberryPiBacnetController/' path
 
 
 ### Prerequisites ###
@@ -57,3 +60,6 @@ sudo apt-get install build-essential
 - New makefile created to suit latest project folder structure
 - Some files renamed to lower-case since g++ rejects upper-case file extension
 - X.cpp commented
+
+********************************** Rev: 0.06 **********************************
+- Compilation procedure updated in Readme.txt
