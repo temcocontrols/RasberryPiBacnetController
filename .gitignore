@@ -45,3 +45,5 @@
 **/*.OLBlck
 **/*.MNL
 **/*.MAX
+/OBJ/*.o
+/OBJ
