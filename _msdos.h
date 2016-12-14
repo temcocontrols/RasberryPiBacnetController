@@ -1,13 +1,16 @@
-#ifdef BAS_TEMP
-// ********************** START OF _MSDOS.H **********************
-//
-//
-// This file contains header files used to call MS-DOS
-// specific support routines.  The only one defined at this
-// time is the Bus() function, which determines whether an ISA or
-// Microchannel bus is in use on the target machine.
-
-
+/******************************************************************************
+ * File Name: _msdos.h
+ * 
+ * Description: 
+ * This file contains header files used to call MS-DOS specific support 
+ * routines.  The only one defined at this time is the Bus() function, which 
+ * determines whether an ISA or Microchannel bus is in use on the target 
+ * machine.
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+ 
 #ifndef __MSDOS_DOT_H
 #define __MSDOS_DOT_H
 /*
@@ -17,7 +20,3 @@ void Delay( unsigned long );
 
 
 #endif  // #ifndef __MSDOS_DOT_H
-
-// ********************** END OF _MSDOS.H **********************
-
-#endif //BAS_TEMP

@@ -1,18 +1,36 @@
-#ifdef BAS_TEMP
-#define ROUTER
+/******************************************************************************
+ * File Name: router.cpp
+ * 
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+ 
+/******************************************************************************
+ * INCLUDES
+ *****************************************************************************/
 
-#include <windows.h>
-#include <graphics.h>
+#define ROUTER
+#include <unistd.h>
+#include <string.h>
 #include "t3000def.h"
 #include "aio.h"
 #include "ptp.h"
 #include "net_bac.h"
+
+/******************************************************************************
+ * PREPROCESSORs
+ *****************************************************************************/
+ 
 #define ON   1
 #define OFF  0
+
 /*
 int rr3;
 extern char rrr_buf[20];
 */
+
 extern int Station_NUM;
 
 // status :   0  - free
@@ -28,7 +46,7 @@ extern int timepoints;
 extern char wantpointsentry;
 extern char iamnewonnet;
 extern char netpointsflag;
-extern NETWORK_POINTS	_far network_points_list[MAXNETWORKPOINTS];
+extern NETWORK_POINTS network_points_list[MAXNETWORKPOINTS];
 extern Comm_Info *comm_info;
 extern Panel *ptr_panel;
 
@@ -38,9 +56,9 @@ extern int net_call(int command, int arg,  char *data, uint *length , int dest,
 				 char *returnargs=NULL, int *length_returnargs=NULL,
 				 char *sendargs=NULL, int length_sendargs=0, char bytearg=0, int port=-1);
 extern int generatealarm(char *mes, int prg, int panel, int type, char alarmatall,char indalarmpanel,char *alarmpanel,char printalarm);
-
-extern ROUTING_TABLE Routing_table[MAX_Routing_table];
 extern char action;
+
+ROUTING_TABLE Routing_table[MAX_Routing_table];
 
 NetworkSession NetSession[5];
 int ind_sess;
@@ -55,6 +73,7 @@ int ipxport=-1, rs485port=-1;
 
 int router(int service, int command, ROUTER_PARAMETERS *r=NULL, int	port_number=-1, int send=0)
 {
+#ifdef BAS_TEMP
  signed char nextentry;
  FRAME *pframe;
  char s,t,npci[40];
@@ -602,6 +621,7 @@ if( command==I_Am_Router_To_Network || command==I_Am_Router_To_Network_Prop || c
 	}
  }
 }
+#endif //BAS_TEMP
 }
 
 
@@ -616,11 +636,12 @@ if( command==I_Am_Router_To_Network || command==I_Am_Router_To_Network_Prop || c
 
 int nettask(void)
 {
+#ifdef BAS_TEMP
  class ConnectionData *cdata;
  int j,k,repeat=0,nextentry;
  int sendinfo_flag_tmp;
  unsigned int i;
- char ttime=600;
+ int ttime=600;
  Alarm_point *ptr;
  Panel_info1 *panel_info;
  unsigned long activepanels;
@@ -834,17 +855,20 @@ int nettask(void)
 // send I want to connect to net
 					 net_call(COMMAND_50+100, 70+(0x10<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU, //|NETCALL_SOURCE255,  //|NETCALL_NOTTIMEOUT
 											 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
-					 delay(400);
+					 //delay(400);
+					 usleep(400000);
 					 net_call(COMMAND_50+100, 70+(0x10<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU, //|NETCALL_SOURCE255,  //|NETCALL_NOTTIMEOUT
 											 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
-					 delay(4000);
+					 //delay(4000);
+					 sleep(4);
 					 iamnewonnet = 0;
 					 if( !cdata->panelconnected )
 					 {
 // -> send first a command I am off
 						net_call(COMMAND_50+100, 70+(OFF<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU,    //|NETCALL_NOTTIMEOUT,
 											 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
-						delay(1000);
+						//delay(1000);
+						sleep(1);
 // <-
 					 }
 					}
@@ -852,7 +876,8 @@ int nettask(void)
 					cdata->FirstToken++;
 					net_call(COMMAND_50+100, 70+(ON<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU, //|NETCALL_NOTTIMEOUT,
 											 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
-					delay(1000);
+					//delay(1000);
+					sleep(1);
 				 }
 				 if( cdata->panelconnected ) continue;
 
@@ -864,7 +889,8 @@ int nettask(void)
 					 {
 							net_call(COMMAND_50+100, 70+(ON<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU, //|NETCALL_NOTTIMEOUT,
 											 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
-							delay(500);
+							//delay(500);
+							usleep(500000);
 					 }
 					}
 					cdata->laststation_connected=-1;
@@ -876,19 +902,21 @@ int nettask(void)
 					net_call(COMMAND_50+100, 70+(OFF<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU, //|NETCALL_NOTTIMEOUT,
 											 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
 					j = Station_NUM;
-					delay(100);
+					//delay(100);
+					usleep(100000);
 				 }
 				 if( (sendinfo_flag_tmp&LASTSTCONNECTED) || (sendinfo_flag_tmp&FIRSTTOKEN) || (sendinfo_flag_tmp&SENDINFO_TIME) )
 				 {
-					for(i=0;i<(Station_NUM-1);i++)
+					for(i=0; i<(unsigned int)(Station_NUM-1); i++)
 					{
 					 if(cdata->panel_info1.active_panels&(0x01<<i)) break;
 					}
-					if( i>=(Station_NUM-1) )
+					if( i>=(unsigned int)(Station_NUM-1) )
 					{
 						net_call(COMMAND_50+100, 70+(0x02<<8), (char *)&j, &i, 255, Routing_table[k].Port.network, BACnetUnconfirmedRequestPDU,  //|NETCALL_NOTTIMEOUT,
 									 TIMEOUT_NETCALL,NULL,NULL,NULL,0,0,k);
-						delay(100);
+						//delay(100);
+						usleep(100000);
 					}
 				 }
 				 if( sendinfo_flag_tmp&SENDINFO_IAMONNET )
@@ -936,12 +964,15 @@ int nettask(void)
 */
 //	suspend(NETTASK);
  }
+ #endif //BAS_TEMP
 }
 
 int sendalarm(int arg, Alarm_point *ptr, Panel_info1 *panel_info, int t=0)
 {
+
  unsigned int i;
  int ret=0;
+#ifdef BAS_TEMP
 			i = sizeof(Alarm_point);
 			if(	ptr->where1==255 )
 			{
@@ -1015,6 +1046,7 @@ int sendalarm(int arg, Alarm_point *ptr, Panel_info1 *panel_info, int t=0)
 					 ret=1;
 			 }
 			}
+#endif //BAS_TEMP
  return ret;
  }
 
@@ -1028,6 +1060,7 @@ int alarmtask(void)
  Panel_info1 *panel_info;
  ret = 0;
  ret1 = 0;
+#ifdef BAS_TEMP
  while(1)
  {
 	alf = 0;
@@ -1170,6 +1203,7 @@ int alarmtask(void)
 		new_alarm_flag |= 0x04;
 	}
  }
+ #endif //BAS_TEMP
 }
 
 
@@ -1241,6 +1275,7 @@ int localnetwork(int net)
 
 int checkpointpresence(int num_point,int point_type,int num_panel,int num_net,int panel,int network)
 {
+#ifdef BAS_TEMP
  unsigned long activepanels;
  int i,j;
 
@@ -1271,11 +1306,13 @@ int checkpointpresence(int num_point,int point_type,int num_panel,int num_net,in
 	 if( num_net==NetworkAddress && num_panel==	Station_NUM )
 			 return 1;
  }
+#endif //BAS_TEMP
  return 0;
 }
 
 int checkmaxpoints(int num_point,int point_type,int num_panel,int num_net)
 {
+#ifdef BAS_TEMP
  unsigned char tbl_bank1[MAX_TBL_BANK];
  unsigned long activepanels;
  int i,j,t;
@@ -1313,6 +1350,7 @@ int checkmaxpoints(int num_point,int point_type,int num_panel,int num_net)
 			 return ptr_panel->table_bank[point_type];
   }
  }
+#endif //BAS_TEMP
  return 0;
 }
 
@@ -1352,4 +1390,3 @@ int belongtowhichnet(int num_panel, int num_net, int network)
 
 }
 */
-#endif //BAS_TEMP

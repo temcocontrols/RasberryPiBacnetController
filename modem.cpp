@@ -1,14 +1,18 @@
-#ifdef BAS_TEMP
-// ********************** START OF MODEM.CPP **********************
-//
-//
-// This file contains all of the code for the Modem class.  It should
-// be compile and linked with any program wanting to use the class.
+/******************************************************************************
+ * File Name: modem.cpp
+ * 
+ * Description: 
+ * This file contains all of the code for the Modem class.  It should be 
+ * compile and linked with any program wanting to use the class.
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
 
-#include <alloc.h>
-#include <windows.h>
-#include <graphics.h>
-#include <conio.h>
+ /******************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+ 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,29 +22,48 @@
 #include "rs232.h"
 #include "modem.h"
 #include "_msdos.h"
-#include <bios.h>
 #include "serial.h"
 #include "gwin.h"
 #include "router.h"
 
+/******************************************************************************
+ * PREPROCESSORs
+ *****************************************************************************/
+ 
 #define CTRLBREAK	     -1
 //extern long time_slave;
 //extern Comm_Info huge comm_info[MAX_COMM_INFO];
-extern void *DisplayMessage(int lx, int ly, int rx, int ry, char *title, char *message, GWindow **Er1, int fcolor=Black, GWindow *Er2=NULL, long delay=0);
+
+/******************************************************************************
+ * FUNCTION DECLARATIONS
+ *****************************************************************************/
+#ifdef BAS_TEMP
+extern void *DisplayMessage(int lx, int ly, int rx, int ry, char *title, 
+								char *message, GWindow **Er1, int fcolor=Black, 
+								GWindow *Er2=NULL, long delay=0);
+#endif //BAS_TEMP								
+/******************************************************************************
+ * GLOBALS
+ *****************************************************************************/
+ 
 extern Comm_Info *comm_info;
 extern int disconnect_time;
+#ifdef BAS_TEMP
 extern int mode_text;
-extern char huge *trying_mess;
+#endif //BAS_TEMP
+extern char *trying_mess;
+#ifdef BAS_TEMP
 GWindow *Modem_answer;
+#endif //BAS_TEMP
 char nr_line_modem_answer;
 char autodetect_state;
-char huge *default_string="AT &F&C1&D2V1";
+char default_string[] = "AT &F&C1&D2V1";
 //char huge *pickuptext=" Pick up the phone handset and manually dial the number:                                                            When you hear the answer tone from the remote computer:         1. Hit any key                                       2.Wait one second             3.Hang up the handset";
 /*
 char huge *pickuptext=" Pick up the phone handset and ask for extension        .               Hit any key now.";
 char huge *hanguptext="     When the connection is made hit any key first                then hang up the phone";
 */
-extern char huge *pressanykey;
+extern char *pressanykey;
 //#include <iostream.h>
 
 // The modem capability database is used to define all of the
@@ -50,71 +73,77 @@ extern char huge *pressanykey;
 // conventional file.
 
 ModemCapabilities ModemDataBase[] = {
-{ "Generic Modem",
-	"AT &F&C1&D2V1",
-	"AT S0=0",
-	"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0\0",
-	"",
-	"",
-	38400L,
-	0,
-	1
-},
-/*
-{ "Old Modem",
-	"AT",
-	"\0",
-	"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
-	"",
-	"",
-	300L,
-	0,
-	0
-},
-{ "Dallas Modem",
-	"ATS=QV1X4 &C1 &D2 &K3  S36=7\V1W1",
-	"\0",
-	"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
-	"",
-	"",
-	2400L,
-	0,
-	0
-},
-
-{ "Hayes Compatible",
-	"AT &F B1E1Q0V1X4 Y0 &C1 &D2 S7=90",
-	"\0",
-	"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
-	"",
-	"",
-	2400L,
-	0,
-	0
-},
-{ "Practical Peripherals 14400FX",
-	"AT &F0 &C1 &D2 S95=44",
-	"\0",
-	"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
-	"CLASS 5\0V.42BIS\0\0",
-	"LAP-M\0ALT\0\0",
-	57600L,
-	1,
-	1
-},
-{ "Intel SatisFAXtion 400e",
-	"AT &F",
-	"\0",
-	"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
-	"COMP\0\0",
-	"LAPM\0MNP\0REL\0\0",
-	57600L,
-	1,
-	1
-},
-*/
-{ ""
-} };
+	{ 
+		"Generic Modem",
+		"AT &F&C1&D2V1",
+		"AT S0=0",
+		"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0\0",
+		"",
+		"",
+		38400L,
+		0,
+		1
+	},
+	/*
+	{ 
+		"Old Modem",
+		"AT",
+		"\0",
+		"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
+		"",
+		"",
+		300L,
+		0,
+		0
+	},
+	{ 
+		"Dallas Modem",
+		"ATS=QV1X4 &C1 &D2 &K3  S36=7\V1W1",
+		"\0",
+		"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
+		"",
+		"",
+		2400L,
+		0,
+		0
+	},
+	{ 
+		"Hayes Compatible",
+		"AT &F B1E1Q0V1X4 Y0 &C1 &D2 S7=90",
+		"\0",
+		"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
+		"",
+		"",
+		2400L,
+		0,
+		0
+	},
+	{ 
+		"Practical Peripherals 14400FX",
+		"AT &F0 &C1 &D2 S95=44",
+		"\0",
+		"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
+		"CLASS 5\0V.42BIS\0\0",
+		"LAP-M\0ALT\0\0",
+		57600L,
+		1,
+		1
+	},
+	{ 
+		"Intel SatisFAXtion 400e",
+		"AT &F",
+		"\0",
+		"NO CARRIER\0ERROR\0NO DIALTONE\0BUSY\0NO ANSWER\0\0",
+		"COMP\0\0",
+		"LAPM\0MNP\0REL\0\0",
+		57600L,
+		1,
+		1
+	},
+	*/
+	{ ""
+	} 
+};
 
 // The modem constructur sets up the capability database for the
 // modem of the particular name, but doesn't do much else.  If the
@@ -123,21 +152,23 @@ ModemCapabilities ModemDataBase[] = {
 
 Modem::Modem( RS232 &rs232_port, char *modem_name, Serial *s )
 {
-		int i;
-//    putch('1');
-		port = &rs232_port;
-		serptr = s;
-//		modem_data = &ModemDataBase[ 0 ];
-		modem_data = &comm_info[serptr->com_port].modemdata;
-		for ( i = 0 ; *ModemDataBase[ i ].name != '\0' ; i++ ) {
-		 if ( strcmp( modem_name, ModemDataBase[ i ].name ) == 0 ) {
+	int i;
+	//    putch('1');
+	port = &rs232_port;
+	serptr = s;
+	//		modem_data = &ModemDataBase[ 0 ];
+	modem_data = &comm_info[serptr->com_port].modemdata;
+	for ( i = 0 ; *ModemDataBase[ i ].name != '\0' ; i++ ) 
+	{
+		if ( strcmp( modem_name, ModemDataBase[ i ].name ) == 0 ) 
+		{
 			modem_data = &ModemDataBase[ i ];
 			break;
-		 }
 		}
-		modem_data->initial_baud_rate = comm_info[serptr->com_port].baudrate;
-		tone_dial = 1;
-		carrier_timeout = 60000L;
+	}
+	modem_data->initial_baud_rate = comm_info[serptr->com_port].baudrate;
+	tone_dial = 1;
+	carrier_timeout = 60000L;
 }
 
 // The usual translation routine is used to print out the error
@@ -145,15 +176,23 @@ Modem::Modem( RS232 &rs232_port, char *modem_name, Serial *s )
 
 char *Modem::ErrorName( ModemError status )
 {
-		switch ( status ) {
-		 case MODEM_SUCCESS           : return "Success";
-		 case MODEM_NO_RESPONSE       : return "No Response";
-		 case MODEM_NO_CONNECTION     : return "No Connection";
-		 case MODEM_DISCONNECT_FAILED : return "Disconnect failed";
-		 case MODEM_USER_ABORT        : return "User abort";
-		 case MODEM_RING							: return "Ringing";
-		 default                      : return "Unknown Error";
-		}
+	switch ( status ) 
+	{
+		case MODEM_SUCCESS: 
+			return "Success";
+		case MODEM_NO_RESPONSE: 
+			return "No Response";
+		case MODEM_NO_CONNECTION: 
+			return "No Connection";
+		case MODEM_DISCONNECT_FAILED: 
+			return "Disconnect failed";
+		case MODEM_USER_ABORT: 
+			return "User abort";
+		case MODEM_RING: 
+			return "Ringing";
+		default: 
+			return "Unknown Error";
+	}
 }
 
 // The initialization routine just has to send out the initialization
@@ -165,17 +204,19 @@ ModemError Modem::Initialize( void )
 {
 		if( serptr->Read_mode() == MASTER )
 		{
+#ifdef BAS_TEMP
 		 Modem_answer = new GWindow(19,6,61,17,NO_STACK,0);
 		 Modem_answer->GWSet("Initializing modem",Cyan,Blue);
 		 Modem_answer->GShowWindow(0);
 //		Modem_answer->GWPuts(1,2,"Initializing modem",Cyan,Black);
 		 nr_line_modem_answer=1;
 		 if(autodetect_state) Modem_answer->GWPuts(nr_line_modem_answer++,2,trying_mess,Cyan,Black);
+#endif //BAS_TEMP
 		}
 		ModemError status=MODEM_SUCCESS;
 		port->Dtr( 1 );
 			Delay(400);
-		port->Write( "ATZ\r" );
+		port->Write( (void *)"ATZ\r" );
 		wait_for_response( 4000 );
 		port->Set( modem_data->initial_baud_rate );
 		port->RtsCtsHandshaking( modem_data->handshaking );
@@ -203,18 +244,22 @@ ModemError Modem::Initialize( void )
 				}
 			if( serptr->Read_mode() == MASTER )
 			{
+#ifdef BAS_TEMP
 			 Modem_answer->GWPuts(nr_line_modem_answer++,2,ErrorName(status),Cyan,Black);
+#endif //BAS_TEMP
 			 Delay(2000);
 			}
 		}
 		if( serptr->Read_mode() == MASTER )
 		{
+#ifdef BAS_TEMP
 			Modem_answer->GReleaseWindow();
 			if( Modem_answer )
 			{
 			 delete Modem_answer;
 			 Modem_answer = NULL;
 			}
+#endif //BAS_TEMP
 		}
 		return status;
 }
@@ -246,12 +291,18 @@ void Modem::read_line( char *buffer, int buf_size )
 		}
 		*buffer = '\0';
 		if( serptr->Read_mode() == MASTER )
+		{
+#ifdef BAS_TEMP
 			if( Modem_answer )
+			{
 			 if(p[0]&&p[0]!=0x0D)
 			 {
 				if(nr_line_modem_answer==8) nr_line_modem_answer--;
 				Modem_answer->GWPuts(nr_line_modem_answer++,2,p,Cyan,Black);
 			 }
+			}
+#endif //BAS_TEMP
+		}
 }
 
 // This protected routine is used to wait for an OK message
@@ -359,8 +410,10 @@ ModemError Modem::wait_for_connection( long time_out )
 //					char mess[] = "Fail strings";
 //					for( i=0; mess[i] != 0; i++ ) echo( mess[i] );
 //					for( i=0; connect[i] != 0; i++ ) echo( connect[i] );
+#ifdef BAS_TEMP
 					if(mode_text && serptr->Read_mode() == MASTER)
 					 mxyputs(19+(42-strlen(connect))/2,10,connect,Lightblue,Black);
+#endif //BAS_TEMP
 					return MODEM_NO_CONNECTION;
 				}
 			}
@@ -381,8 +434,10 @@ ModemError Modem::wait_for_connection( long time_out )
 */
 				 local_baud_rate = modem_data->initial_baud_rate;
 				if(!local_baud_rate) local_baud_rate = 1200;
+#ifdef BAS_TEMP
 				if(mode_text && serptr->Read_mode() == MASTER)
 				  mxyputs(19+(42-strlen(buffer))/2,10,buffer,Lightblue,Black);
+#endif //BAS_TEMP
 //				port->Set( local_baud_rate );
 				return MODEM_SUCCESS;
 			}
@@ -431,10 +486,13 @@ ModemError Modem::Dial( char *dial_string, int blind )
 
 ModemError Modem::Dial( char *dial_string, int blind )
 {
+#ifdef BAS_TEMP
  GWindow *A;
+#endif //BAS_TEMP
  long time_out=0;
 		if(dial_string[0]=='O')
 		{
+#ifdef BAS_TEMP
 		 A= new GWindow(10,7,70,15,NO_STACK,0);
 		 A->GWSet("About",Lightblue,Blue);
 		 A->GShowWindow(WIN_ERROR);
@@ -448,10 +506,11 @@ ModemError Modem::Dial( char *dial_string, int blind )
 		 delete A;
 //		 memcpy(&pickuptext[59],&dial_string[1],strlen(&dial_string[1]));
 //		 DisplayMessage(10, 7, 70, 11, pressanykey, pickuptext, NULL, Black, NULL, 500000);
+#endif //BAS_TEMP
 		}
 		else
 			port->Dtr( 1 );
-		port->Write( "ATD" );
+		port->Write((void *) "ATD" );
 		if(dial_string[0]!='O')
 		{
 		 if ( tone_dial )
@@ -475,7 +534,7 @@ ModemError Modem::Answer( void )
 {
 		port->Dtr( 1 );
 		Delay(300);
-		port->Write( "ATA\r" );
+		port->Write((void *) "ATA\r" );
 		return wait_for_connection();
 }
 
@@ -496,15 +555,15 @@ ModemError Modem::Disconnect( void )
 */
 		port->Dtr( 1 );
 		Delay(400);
-		port->Write( "AT\r" );
+		port->Write( (void *)"AT\r" );
 		if ( wait_for_response( 2000 ) == MODEM_SUCCESS )
 		{
 			port->Set( modem_data->initial_baud_rate );
 			return MODEM_SUCCESS;
 		}
-		port->Write( "+++" );
+		port->Write((void *) "+++" );
 		wait_for_response( 1500 );
-		port->Write( "ATH0\r" );
+		port->Write((void *) "ATH0\r" );
 		if ( wait_for_response( 3000 ) == MODEM_SUCCESS )
 		{
 			port->Set( modem_data->initial_baud_rate );
@@ -518,12 +577,14 @@ ModemError Modem::Disconnect( void )
 
 ModemError Modem::UserAbort( void )
 {
+#ifdef BAS_TEMP
 		if( bioskey_new(1) == CTRLBREAK )
 //		if( ( bioskey(1)&0xff ) == 27 && (bioskey(2)&0x04 ))
 		{
 		 bioskey_new(0);
 		 return MODEM_USER_ABORT;
 		}
+#endif //BAS_TEMP
 		return MODEM_SUCCESS;
 }
 
@@ -628,7 +689,3 @@ void Modem::DumpState( void )
 	 } 
 */
 }
-
-// ********************** END OF MODEM.CPP **********************
-
-#endif //BAS_TEMP

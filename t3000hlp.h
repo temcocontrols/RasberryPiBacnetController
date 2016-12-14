@@ -27,28 +27,6 @@
 #define	MENU_HARDWARE   300
 #define BORDER_LETTER   "() \r\n\0"
 
-/******************************************************************************
- * USER DEFINED TYPEs
- *****************************************************************************/
-
- typedef enum {
-	BLACK = 0,
-	BLUE,
-	GREEN,
-	CYAN,
-	RED,
-	MAGENTA,
-	BROWN,
-	LIGHTGRAY,
-	DARKGRAY,
-	LIGHTBLUE,
-	LIGHTGREEN,
-	LIGHTCYAN,
-	LIGHTRED,
-	LIGHTMAGENTA,
-	YELLOW,
-	WHITE 
- }BGI_Colour;
  
 /******************************************************************************
  * FUNCTION DECLARATIONs

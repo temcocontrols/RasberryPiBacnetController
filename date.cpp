@@ -268,7 +268,6 @@ int remote_list_last_index_mstp, remote_list_last_index_ipx;
 
 char int_disk, int_disk1;
 
-ROUTING_TABLE Routing_table[MAX_Routing_table];
 int networkaddress;
 int NetworkAddress=1;
 char far NetworkName[NAME_SIZE]={'N','E','T','W','O','R','K','1',0};

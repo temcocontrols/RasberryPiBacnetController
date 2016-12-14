@@ -900,7 +900,7 @@ void ServerTSMTable::free( int entry, int n, int d, int s, int id)
  }
 }
 #endif //RS485
-#if BAS_TEMP
+
 class Serial;
 
 class MSTP : public Serial
@@ -931,7 +931,7 @@ class MSTP : public Serial
 //		static int MSTP_receive_frame( MSTP *mstp );
 		static int MSTP_Master_node( MSTP *mstp );
 };
-#endif //BAS_TEMP
+
 #ifdef RS485
 //MSTP_SENDFRAMEPOOL     SendFramePool;
 //MSTP_RECEIVEDFRAMEPOOL ReceivedFramePool;

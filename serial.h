@@ -85,9 +85,7 @@ typedef struct {
 	long               baudrate;
 	unsigned int       connection:4;
 	unsigned int       activate:4;
-#ifdef BAS_TEMP
 	ModemCapabilities  modemdata;
-#endif //BAS_TEMP
 	char               rings;
 	char               program_nr;
 	int                unused;
@@ -132,9 +130,9 @@ class Serial : public ConnectionData
 		uint 								length_in;
 		PC8250							*port;
 		Port_Status					   port_status;
-#ifdef BAS_TEMP
 		Modem 							*modem_obj;
 		ModemError					   modem_status;
+#ifdef BAS_TEMP
 		Exec_mode						ex_mode;
 #endif //BAS_TEMP
 		//	Serial_mode 				   mode;

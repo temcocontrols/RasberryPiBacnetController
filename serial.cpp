@@ -25,41 +25,45 @@
 #include <string.h>
 #include "rs485.h"
 
-#ifdef BAS_TEMP
-extern int Black;					    //0
-extern int Blue;              //1
-extern int Green;             //2
-extern int Cyan;              //3
-extern int Red;               //4
-extern int Green1; 				    //5
-extern int Blue1;             //6
-extern int Lightgray;         //7
+/******************************************************************************
+ * USER DEFINED TYPEs
+ *****************************************************************************/
+ 
+typedef struct {
+	RS232PortName port_name;
+	irq_name irq_port;
+} Port_list;
 
-extern int Darkgray;          //8
-extern int Lightblue;         //9
-extern int Lightgreen;       	//10
-extern int Lightcyan;         //11
-extern int Lightred;          //12
-extern int Lightmagenta;   	  //13
-extern int Yellow;            //14
-extern int White;             //15
+/******************************************************************************
+ * GLOBALs
+ *****************************************************************************/
+ 
+extern int Black;          //0
+extern int Blue;           //1
+extern int Green;          //2
+extern int Cyan;           //3
+extern int Red;            //4
+extern int Green1; 		   //5
+extern int Blue1;          //6
+extern int Lightgray;      //7
+extern int Darkgray;       //8
+extern int Lightblue;      //9
+extern int Lightgreen;     //10
+extern int Lightcyan;      //11
+extern int Lightred;       //12
+extern int Lightmagenta;   //13
+extern int Yellow;         //14
+extern int White;          //15
 extern int Brown;
 extern int Magenta;
 
-extern void chbkg(int lx, int ly, int width, int bkgnd, int frgnd, int unchangecol=127, int height = 0);
-extern void *DisplayMessage(int lx, int ly, int rx, int ry, char *title, char *message, GWindow **Er1, int fcolor=Black, GWindow *Er2=NULL, long delay=0);
-extern void DeleteMessage(GWindow *p);
-
 extern int dtr;
-
-void communication_sign(long, long);
-#endif //BAS_TEMP
-
-int SERIAL_EXIT, MODEM_EXIT, RS485_EXIT;
-//char carry_detect;
 
 //extern Comm_Info comm_info[MAX_COMM_INFO];
 extern Comm_Info *comm_info;
+
+int SERIAL_EXIT, MODEM_EXIT, RS485_EXIT;
+//char carry_detect;
 
 char RS485_PIC_mask;
 char sleep_modem;
@@ -69,13 +73,8 @@ long data_const, data_length_const;
 int disconnect_time=-1;
 char enable_ints;
 
-char *trying_mess = "Trying on COM0 with IRQ0 !";
-char *err_inst_text = " Error. COM   not installed! ";
-
-typedef struct {
-	RS232PortName port_name;
-	irq_name irq_port;
-} Port_list;
+char trying_mess[] = "Trying on COM0 with IRQ0 !";
+char err_inst_text[] = " Error. COM   not installed! ";
 
 Port_list port_list[20] = { 
 	{COM1, IRQ4}, 
@@ -100,6 +99,21 @@ Port_list port_list[20] = {
 	{COM4, IRQ7} 
 };
 
+/******************************************************************************
+ * FUNCTION DECLARATIONs
+ *****************************************************************************/
+
+#ifdef BAS_TEMP
+extern void chbkg(int lx, int ly, int width, int bkgnd, int frgnd, int unchangecol=127, int height = 0);
+extern void *DisplayMessage(int lx, int ly, int rx, int ry, char *title, char *message, GWindow **Er1, int fcolor=Black, GWindow *Er2=NULL, long delay=0);
+extern void DeleteMessage(GWindow *p);
+void communication_sign(long, long);
+#endif //BAS_TEMP
+
+/******************************************************************************
+ * FUNCTION DEFINATIONs
+ *****************************************************************************/
+
 Serial :: Serial( byte c_port, int p_no )
 {
 	activity = FREE;
@@ -111,9 +125,7 @@ Serial :: Serial( byte c_port, int p_no )
 //	if( media == MODEM_LINK )	task_number = MODEM;
 	Set_mode( SLAVE );
 	port = NULL;
-#ifdef BAS_TEMP
 	modem_obj = NULL;
-#endif //BAS_TEMP
 	ser_data = NULL;
 	connection_established = 0;
 	port_status = NOT_INSTALLED;
@@ -127,37 +139,31 @@ Serial::~Serial()
 	Delete_port();
 };
 
-#ifdef BAS_TEMP
 long Serial::ReadBaudRate( void )
 {
- if( media == SERIAL_LINK || media == RS485_LINK)
- {
-	if(port)
-	  return port->ReadBaudRate();
-	else
-	  return 2400;
- }
- else
-	if(modem_obj)
-	  return modem_obj->local_baud_rate;
+	if( media == SERIAL_LINK || media == RS485_LINK)
+	{
+		if(port)
+			return port->ReadBaudRate();
+		else
+			return 2400;
+	}
+	else if(modem_obj)
+		return modem_obj->local_baud_rate;
 }
 
 void Serial::FlushRXbuffer()
 {
-	asm push es;
 	if(port)
 		port->FlushRXBuffer();
-	asm pop es;
 }
 
 void Serial::FlushTXbuffer()
 {
-	asm push es;
 	if(port)
 		port->FlushTXBuffer();
-	asm pop es;
 }
-#endif //BAS_TEMP
+
 void Serial::Set_mode( int smode )
 {
 #ifdef BAS_TEMP

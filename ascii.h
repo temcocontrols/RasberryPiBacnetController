@@ -1,7 +1,10 @@
-#ifdef BAS_TEMP
-// ******************** START OF ASCII.H *******************
-//
-//
+/******************************************************************************
+ * File Name: ascii.h
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
 
 #ifndef _ASCII_DOT_H
 #define _ASCII_DOT_H
@@ -16,7 +19,3 @@
 #define ESC  27
 
 #endif // #ifndef _ASCII_DOT_H
-
-// ******************** END OF ASCII.H *******************
-
-#endif //BAS_TEMP

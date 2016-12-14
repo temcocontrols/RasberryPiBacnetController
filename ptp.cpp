@@ -50,10 +50,8 @@ extern int networklayer( int service, int priority, int network,
  *****************************************************************************/
  
 extern long stack_com[22];
-#ifdef BAS_TEMP
 extern Panel_info1 Panel_Info1;
 extern Panel *ptr_panel;
-#endif //BAS_TEMP
 extern Comm_Info *comm_info;
 extern char Station_NAME[NAME_SIZE];
 extern int  Station_NUM;
@@ -1620,9 +1618,10 @@ int PTP::PTP_transmission_state_machine(  PTP *ptp )
 		}
  }
 }
-
+#endif //BAS_TEMP
 int PTP::sendframe(int length_npci, char* npci, int length_asdu_npdu, char* asdu_npdu, int length_apci, char *apci)
 {
+#ifdef BAS_TEMP
  int nextentry;
  PTP_FRAME *pframe;
 
@@ -1638,11 +1637,13 @@ int PTP::sendframe(int length_npci, char* npci, int length_asdu_npdu, char* asdu
 	  memcpy(&pframe->Buffer[length_npci+length_apci], asdu_npdu, length_asdu_npdu);
 	 SendFramePool.Unlockhead();
 	 resume(task+PTP_transmission);
+#endif //BAS_TEMP
 	 return 1;
 }
 
 int PTP::sendframe(PTP_FRAME *frame)
 {
+#ifdef BAS_TEMP
  int nextentry;
  PTP_FRAME *pframe;
 
@@ -1652,10 +1653,11 @@ int PTP::sendframe(PTP_FRAME *frame)
 	 pframe->Length = frame->Length;
 	 SendFramePool.Unlockhead();
 	 resume(task+PTP_transmission);
+#endif //BAS_TEMP
 	 return 1;
 }
 
-
+#ifdef BAS_TEMP
 ASYNCRON::ASYNCRON( int c_port, int n_port ):Serial( c_port, n_port )
 {
  PORT_STATUS_variables *ps;

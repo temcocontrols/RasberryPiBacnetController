@@ -40,13 +40,13 @@ typedef struct {
 	unsigned onoff  : 1 ;  // 0=OFF 1=ON
 	unsigned next   :15 ;
 } Heap_dmon;
-
+#endif //BAS_TEMP
 typedef struct {
 	char view_name[11];
 	char onoff;
 	long timerange;
 } Views;
-
+#ifdef BAS_TEMP
 typedef union 	{
 	Analog_units_equate analog_unit;
 	Digital_units_equate digital_unit;
@@ -58,7 +58,7 @@ class Point{
 		byte number;
 		byte point_type;
 };
-
+#endif //BAS_TEMP
 /* Point_T3000;*/
 class Point_T3000 {
 	public:
@@ -91,7 +91,7 @@ class Point_Net {
 		int operator==(Point_Net compare);
 		void operator=(const Point_Net &copy);
 };
-
+#ifdef BAS_TEMP
 typedef struct{
 	long prev_header;
 	char n_inputs;
@@ -110,7 +110,7 @@ typedef struct{
 	unsigned long time_last_sample;
 	unsigned n_sample;
 } Header_amon;
-
+#endif //BAS_TEMP
 typedef struct {
 	Point_Net point;
 	long point_value;
@@ -122,7 +122,7 @@ typedef struct {
 	unsigned units             : 8;
 } Point_info;
 
-
+#ifdef BAS_TEMP
 typedef struct {
 	byte number_subA_panels; // ( 1 byte ; 0-124 )
 	byte number_subB_panels; // ( 1 byte ; 0-124 )
@@ -193,7 +193,7 @@ class Icon
 		int draw_icon(int x, int y, char copy = 0, rgb *current_pal=NULL, char save_under=1);
 		~Icon(void);
 };
-
+#endif //BAS_TEMP
 
 typedef struct
 {
@@ -233,20 +233,20 @@ typedef struct
 	unsigned 	normal_color	      : 4;
 
 }	Str_grp_element; /*8+2+4+4+2+2+1+1+2+2 = 32*/
-
+#ifdef BAS_TEMP
 typedef struct
 {
 	char        *ptr_save_bkgnd;
 	byte        nchar;
 	struct Icon *icon;
 } Str_grp_work_data;
-
+#endif //BAS_TEMP
 typedef struct
 {
-	Str_grp_element	   huge *ptrgrp;
-	int 						nr_elements;
+	Str_grp_element	  *ptrgrp;
+	int 			nr_elements;
 } Control_group_elements;
-
+#ifdef BAS_TEMP
 typedef struct
 {
  public:
@@ -335,13 +335,13 @@ typedef struct
 	unsigned number_of_users;
 	User_element *block;
 } User_block;
-
+#endif //BAS_TEMP
 typedef struct {
 	 char direct;
 	 char digital_units_off[12];       //12 bytes; string)
 	 char digital_units_on[12];        //12 bytes; string)
 } Units_element;             // 30 bytes;
-
+#ifdef BAS_TEMP
 class Units_block  : public Block
 {
 	public:
@@ -378,7 +378,7 @@ typedef struct
 
 } Str_netstat_point;  // 21+4+2+1+2+1=31
 */
-
+#endif //BAS_TEMP
 // structure for single netstat
 typedef struct{
 	char description[21];//modify by dina long, Feb.3,1998
@@ -402,7 +402,7 @@ typedef struct{
 							            	// 1 - change,  slaver report change
 */
 } Str_netstat_point; // 2+ 1+1+1+1+ 1+1+ 1=9
-
+#ifdef BAS_TEMP
 /*
 // structure for netstat in t3000
 typedef struct
@@ -433,7 +433,7 @@ class Netstat_block : public Block
 ********     11.19.1997  *************
 **********    code end   *************
 **************************************/
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char description[21]; 	       /* (21 bytes; string)*/
@@ -454,7 +454,7 @@ typedef struct
 	unsigned int delay_timer;      /* (2 bytes;  seconds,minutes)*/
 
 } Str_out_point;  /* 21+4+2+2+9 = 40 */
-
+#ifdef BAS_TEMP
 class Output_block : public Block
 {
 	public:
@@ -468,7 +468,7 @@ class Output_block : public Block
 		int Read(int , char);
 		~Output_block();
 };
-
+#endif //BAS_TEMP
 
 typedef struct
 {
@@ -494,7 +494,7 @@ typedef struct
 	byte        range;	      			/* (1 Byte ; input_range_equate)*/
 
 } Str_in_point; /* 21+1+4+1+1+9+1 = 38 */
-
+#ifdef BAS_TEMP
 class Input_block : public Block
 {
 	public:
@@ -508,7 +508,7 @@ class Input_block : public Block
 		int Read(int , char);
 		~Input_block();
 };
-
+#endif //BAS_TEMP
 
 typedef struct
 {
@@ -524,7 +524,7 @@ typedef struct
 	unsigned range          : 8; /*  (1 Byte ; variable_range_equate)*/
 
 }	Str_variable_point; /* 21+9+4+2 = 36*/
-
+#ifdef BAS_TEMP
 class Var_block : public Block
 {
  public:
@@ -538,7 +538,7 @@ class Var_block : public Block
 	 int Read(int , char);
 	 ~Var_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	Point_T3000 input;	      /* (2 bytes; point)*/
@@ -559,7 +559,7 @@ typedef struct
 	byte bias;	      /* (1 Byte ; 0-100)*/
 	byte rate;	      /* (1 Byte ; 0-2.00)*/
 }	Str_controller_point; /* 2+4+4+2+4+1+1+4 = 24*/
-
+#ifdef BAS_TEMP
 class Controller_block : public Block
 {
 public:
@@ -573,7 +573,7 @@ public:
 	 int Read(int , char);
 	 ~Controller_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char description[21];		     /* (21 bytes; string)*/
@@ -590,7 +590,7 @@ typedef struct
 	Point_T3000 override_2;	     /* (2 bytes; point)*/
 
 }	Str_weekly_routine_point; /* 21+2+2+2+10 = 38*/
-
+#ifdef BAS_TEMP
 class Weekly_routine_block : public Block
 {
 public:
@@ -604,7 +604,7 @@ public:
 	 int Read(int , char);
 	 ~Weekly_routine_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char description[21]; 	    /* (21 bytes; string)*/
@@ -613,7 +613,7 @@ typedef struct
 	unsigned auto_manual	      : 1;  /* (1 bit; 0=auto, 1=manual)*/
 	unsigned unused				: 14; 	/* ( 12 bits)*/
 }	Str_annual_routine_point;   /* 21+9+2=32 bytes*/
-
+#ifdef BAS_TEMP
 class Annual_routine_block : public Block
 {
 public:
@@ -627,7 +627,7 @@ public:
 	 int Read(int , char);
 	 ~Annual_routine_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char description[21]; 	        // (21 bytes; string)*/
@@ -641,7 +641,7 @@ typedef struct
 	byte         unused;                // because of mini's
 
 }	Str_program_point;	  /* 21+9+2+1+1 = 34 bytes*/
-
+#ifdef BAS_TEMP
 class Program_block : public Block
 {
 public:
@@ -681,7 +681,7 @@ public:
 	byte number_of_points;
 	Str_digital_monitor_point	*block;
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char label[9];		      	  					/* 9 bytes; string */
@@ -710,7 +710,7 @@ typedef struct
 
 typedef struct
 {
-	char huge *data_segment;
+	char *data_segment;
 	unsigned start   :1;    	          // (1 bit)
 	unsigned saved	  :1;    	          // (1 bit)
 	unsigned unused  :6;    	          // (6 bits)
@@ -722,7 +722,7 @@ typedef struct
 	unsigned int  end_index_dig[MAX_POINTS_IN_MONITOR];
 
 }	Str_monitor_work_data;
-
+#ifdef BAS_TEMP
 class Monitor_block: public Block
 {
  public:
@@ -752,7 +752,7 @@ class Amon_inputs_block: public Block
 	 int Read(int , char);
 	 ~Amon_inputs_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char description[21];				/* (21 bytes; string)	*/
@@ -765,7 +765,7 @@ typedef struct
 	unsigned xcur_grp    :14;
 	int    	             ycur_grp;
 } Control_group_point;				/* (size = 46 bytes)	*/
-
+#ifdef BAS_TEMP
 class Control_group_block: public Block
 {
 public:
@@ -820,14 +820,14 @@ public:
 //	Str_table_block( byte );
 //	~Str_table_block();
 };
-
+#endif //BAS_TEMP
 
 typedef struct 		// (size = 11 byte s)
 {
 	char label[9];		     // (9 byte s; string)
 	int  length;  	 // (1 byte ; 0-255)
 } Str_array_point;
-
+#ifdef BAS_TEMP
 class Array_block: public Block
 {
  public:
@@ -887,7 +887,7 @@ public:
 	byte number_of_points;
 	Str_status_point *block;
 };
-
+#endif //BAS_TEMP
 typedef struct {
 
 	Point_Net point;
@@ -928,7 +928,7 @@ typedef struct {
 //	unsigned line          :11;
 //	byte     no;
 } Alarm_point;
-
+#ifdef BAS_TEMP
 class Alarm_block: public Block
 {
 public:
@@ -944,7 +944,7 @@ public:
 	 int savemessage(char count, char type, int point, char cond_type, char *mes, long time_mes);
 	 ~Alarm_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	Point_T3000 point;
@@ -959,7 +959,7 @@ typedef struct
 	signed char nrmes;
 	unsigned count;
 } Alarm_set_point;
-
+#ifdef BAS_TEMP
 class Alarm_set_block: public Block
 {
 public:
@@ -987,7 +987,7 @@ public:
 //	Password_point( void *x );
 };
 */
-
+#endif //BAS_TEMP
 typedef struct
 {
 	char name[16]; 		       // (10 byte s; string)
@@ -1004,7 +1004,7 @@ typedef struct {
 		int ind_passwords;
 		Password_point	passwords[MAX_PASSW];
 } Password_struct;
-
+#ifdef BAS_TEMP
 class Password_block: public Block
 {
 public:
@@ -1089,7 +1089,7 @@ public:
 	 int Read(int , char);
 	 ~Station_block();
 };
-
+#endif //BAS_TEMP
 typedef struct 		// (size = 16 byte s)
 {
 	union {
@@ -1114,7 +1114,7 @@ typedef struct 		// (size = 16 byte s)
 		char time2[16];
 	};
 } Wr_one_day;
-
+#ifdef BAS_TEMP
 class Weekly_routine_time_block : public Block
 {
 public:
@@ -1292,12 +1292,12 @@ typedef struct
 	Point_Net   point;
 } WANT_POINTS;
 */
-
+#endif //BAS_TEMP
 typedef struct
 {
 	Point_info		info;
 }	NETWORK_POINTS;
-
+#ifdef BAS_TEMP
 typedef struct
 {
 	char			  	state;
@@ -1362,9 +1362,9 @@ typedef struct              /* 645 bytes */
 	unsigned monitor	       :4; /* monitors' number */
 	unsigned no_points       :4; /* number of points in block */
 
-/*	unsigned tenths_of_seconds    : 4; /* 4 bits ; 0-15 */
-/*	unsigned second_interval_time : 6; /* 6 bits ; 0-59 */
-/*	unsigned minute_interval_time : 6; /* 6 bits ; 0-59 */
+//	unsigned tenths_of_seconds    : 4; /* 4 bits ; 0-15 */
+//	unsigned second_interval_time : 6; /* 6 bits ; 0-59 */
+//	unsigned minute_interval_time : 6; /* 6 bits ; 0-59 */
 
 	byte second_interval_time; /* 1 Byte ; 0-59 */
 	byte minute_interval_time; /* 1 Byte ; 0-59 */
