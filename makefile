@@ -3,7 +3,7 @@
 CXX = g++
 LDFLAGS = -lwiringPi
 
-VPATH = ./:./:./OBJ
+VPATH = ./Source:./:./OBJ
 
 OUTPUT_OPTION = -o OBJ/$@
 
@@ -11,7 +11,7 @@ CXXFLAGS = -Wall
 
 Target = BAS_RPi_Port
 
-Objects := $(notdir $(patsubst %.cpp,%.o,$(wildcard *.cpp)))
+Objects := $(notdir $(patsubst %.cpp,%.o,$(wildcard Source/*.cpp)))
 
 
 
