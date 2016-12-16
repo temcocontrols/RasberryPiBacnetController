@@ -1,34 +1,50 @@
-#ifdef BAS_TEMP
-#include <windows.h>
+/******************************************************************************
+ * File Name: virtual.cpp
+ * 
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+ 
+/******************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+
+#include <signal.h>
 #include "virtual.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <conio.h>
-#include <dos.h>
-#include <process.h>
-#include <dir.h>
-#include <sys\stat.h>
-#include <alloc.h>
 #include <string.h>
 #include <time.h>
-#include <graphics.h>
-#include <xms.h>
+//#include <xms.h>
+#include "mtkernel.h"
+//#include "graph.h"
+//#include "parser.h"
+#include "rs485.h"
+//#include "ptp.h"
 
+/******************************************************************************
+ * PREPROCESSORs
+ *****************************************************************************/
+ 
 #define OFF 0
 #define On 1
-
 #define LONGTIMETEST -123456789L
-
 #define TIME_VIRTUAL 5
+
+/******************************************************************************
+ * USER DEFINED TYPEs
+ *****************************************************************************/
+ 
 //enum {PROJ=0, VIRTUAL=1 };
 enum {PROGR=0, OPERATOR=1 };
 
-#include "mtkernel.h"
-#include "graph.h"
-#include "parser.h"
-#include "rs485.h"
-#include "ptp.h"
+/******************************************************************************
+ * GLOBALs
+ *****************************************************************************/
+ 
 extern int Black;                 //0
 extern int Blue;                   //1
 extern int Green;                 //2
@@ -45,10 +61,8 @@ extern int Lightcyan;         //11
 extern int Lightred;           //12
 extern int Yellow;               //14
 extern int Blue1;
-
+#ifdef BAS_TEMP
 extern void mputs(char *);
-
-
 extern int dtr;
 extern int ipxport, rs485port;
 extern Panel_info1 Panel_Info1;
@@ -72,7 +86,7 @@ extern void updatetimevars(void);
 
 
 extern Comm_Info *comm_info;
-extern REMOTE_POINTS _far	remote_points_list[MAXREMOTEPOINTS82];
+extern REMOTE_POINTS remote_points_list[MAXREMOTEPOINTS82];
 
 extern int  station_num;
 extern char Station_NAME[NAME_SIZE];
@@ -86,17 +100,18 @@ extern unsigned char blocked, blocked1;
 
 extern POOL print_message_pool;
 extern char print_flag, action,save_alarm_flag;
-//extern char huge heap_amon[];
+//extern char heap_amon[];
 extern unsigned first_free;
 extern int nsample_mem_dig;
 extern int nsample_mem_dig_mon[MAX_ANALM];
 extern int MAX_HEAP_DIGM;
-extern Heap_dmon huge *heap_dmon;  // 5000
+extern Heap_dmon *heap_dmon;  // 5000
 
 extern char dial_buffer[40];
 extern unsigned  t3000_flag; // i/o semaphore
 extern Point_Net localopenscreen;
 extern char DIAL_action, DIAL_dial;
+#endif //BAS_TEMP
 #ifndef WORKSTATION
 
 void longtoa(long f, int length, int ndec, char *buf);
@@ -131,7 +146,7 @@ int generatealarm(char *mes, int prg, int panel, int type, char alarmatall,char 
 //int dalarm(char *mes, int prg, int panel);
 int get_ay_elem(char **prg, long *value, char *local, char *perr=NULL);
 
-extern load_program( char *p, char *fname);
+extern int load_program( char *p, char *fname);
 
 //extern char LOCAL_POINT;
 //extern char CONST_VALUE;
@@ -142,11 +157,11 @@ char *prog_name[16];
 int num_prog;
 long monsecunit[3]={60, 3600, 3600*24L};
 
-long _far stack_com[22];
-long _far stack_virt[22];
+long stack_com[22];
+long stack_virt[22];
 static long *index_stack;
 static long *index_stack_virt;
-char far vmessage[ALARM_MESSAGE_SIZE+26+10];
+char vmessage[ALARM_MESSAGE_SIZE+26+10];
 
 char called_program=0, end_program=0;
 
@@ -195,7 +210,7 @@ extern char save_monitor_command;
 extern char	init_heap_dmon;
 extern char new_alarm_flag;
 
-static struct  time tt;
+static struct timespec tt;
 static int i,j,*pi;
 //static unsigned point;
 //static float *t,value;
@@ -209,8 +224,8 @@ char just_load=1;
 char timeout, timeout_asyn;
 int miliseclast, miliseclast_cur;
 
-char huge *cardtext = "THE CONTROL CARD IS OUT OF ORDER";
-char *line_mes = "         =         ; Low =          ; High =           ";
+char cardtext[] = "THE CONTROL CARD IS OUT OF ORDER";
+char line_mes[] = "         =         ; Low =          ; High =           ";
 
 int g_ind_remote_local_list;
 struct remote_local_list *g_remote_local_list;
@@ -220,7 +235,7 @@ char *time_buf;
 static int point_type,num_point, num_panel, var_type;
 char u[2]={0,0};
 
-extern dig_range_form huge dig_range_array[];
+extern dig_range_form dig_range_array[];
 
 int putmessage(int prg=0, int type=0, int ind=0, long value=0, long setvalue=0);    // ind alarm_set
 int putmessage(char *mes, int prg, int type, char alarmatall,char indalarmpanel,char *alarmpanel);
@@ -232,25 +247,35 @@ long timesave=120000;
 //char readclock_flag;
 long timereadclock;
 int onesec_virtual;
-//uint far xxxx[100],ind_xxxx;
+//uint  xxxx[100],ind_xxxx;
 char read_inputs_rate_tmp, write_outputs_rate_tmp;
 extern char read_inputs_rate, write_outputs_rate;
 
+/******************************************************************************
+ * FUNCTION DEFINATIONs
+ *****************************************************************************/
+ 
 void resetc(void)
 {
+#ifdef BAS_TEMP
 	disable();
+
 	if(mode_text)
 		mxyputs(60,2,"RESET CARD");
+
 	ptr_panel->Aio_Control( RESET_CARD, NULL, 0 );
 	enable();
-	delay(400);
+	//delay(400);
+	usleep(400000);
 	disable();
 	ptr_panel->Config_dacqd_card();
 	enable();
+#endif //BAS_TEMP
 }
 
 int fnc_exec_virtual_code(void)
 {
+#ifdef BAS_TEMP
  char time_sample;
  for(;;)
  {
@@ -436,11 +461,13 @@ int fnc_exec_virtual_code(void)
 	resetc();
 	if(!control)
 	{
-	if(mode_text)
-		mxyputs(20, 23, cardtext, Black, Lightgreen);
-	else
-		outtextxy(150, 460, cardtext);
-	reset1 = 1;
+#ifdef BAS_TEMP
+		if(mode_text)
+			mxyputs(20, 23, cardtext, Black, Lightgreen);
+		else
+			outtextxy(150, 460, cardtext);
+#endif //BAS_TEMP
+		reset1 = 1;
 	}
 	else
 	reset1 = 0;
@@ -503,10 +530,12 @@ int fnc_exec_virtual_code(void)
 // if(onesec_virtual<=0) 	onesec_virtual = 990000;
  msleep(TIME_VIRTUAL);
  }
+#endif //BAS_TEMP
 }
 
 void check_annual_routine( void )
 {
+#ifdef BAS_TEMP
 	int i;
 	byte mask;
 	byte octet_index;
@@ -531,10 +560,12 @@ void check_annual_routine( void )
    }
 	}
 	 check_annual_routine_flag=0;
+#endif //BAS_TEMP
 }
 
 void check_weekly_routine(void)
 {
+#ifdef BAS_TEMP
  register int i,j,k,n;
  signed char w;
  Wr_one_day *p;
@@ -646,10 +677,12 @@ void check_weekly_routine(void)
 	 }
 	}
   check_weekly_routine_flag = 0;
+#endif //BAS_TEMP
 }
 
 int savemonitordata(void)
 {
+#ifdef BAS_TEMP
  Point_Net point;
  if(present_analog_monitor)
  {
@@ -774,10 +807,12 @@ int savemonitordata(void)
   if (save_monitor)
 		resume(AMONITOR);
  }
+#endif //BAS_TEMP
 }
 
 int checkalarmset()
 {
+#ifdef BAS_TEMP
 //!! float value,value1,value2;
 // float value1,value2;
  long value1,value2;
@@ -872,6 +907,7 @@ int checkalarmset()
 	}
 	} // if ptr->point
  } //for
+#endif //BAS_TEMP
 }
 
 //******************************************
@@ -879,6 +915,7 @@ int checkalarmset()
 //******************************************
 int checkalarmentry(void)
 {
+#ifdef BAS_TEMP
  long value1;
  int i,j,k;
 
@@ -947,6 +984,7 @@ int checkalarmentry(void)
 	}
  }
  return j;
+#endif //BAS_TEMP
 }
 
 int putmessage(int prg, int type, int ind, long value, long setvalue)    // ind alarm_set
@@ -959,6 +997,7 @@ int putmessage(int prg, int type, int ind, long value, long setvalue)    // ind 
 //**************************************************
 int putmessage(char *mes, int prg, int type, char alarmatall,char indalarmpanel,char *alarmpanel)
 {
+#ifdef BAS_TEMP
 // char buf[30],*p;
  int i,j,k;
  char *p;
@@ -1001,10 +1040,12 @@ int putmessage(char *mes, int prg, int type, char alarmatall,char indalarmpanel,
  else
 	j=-1;
  return j+1;    // 0 - no space; n - alarm index
-}
+#endif //BAS_TEMP
+ }
 
 int exec_program(int current_prg, unsigned char *prog_code, long *stack, int port)
 {
+#ifdef BAS_TEMP
  int nbytes;
  int type_var,ind,i,ana_dig;
  int id,len,nprog,nitem,lvar,ndeclare;
@@ -1876,10 +1917,12 @@ int exec_program(int current_prg, unsigned char *prog_code, long *stack, int por
 							 break;
 	 }
 	}
+#endif //BAS_TEMP
 }
 
 long veval_exp(char **prg, char *local, int port, char *perr)
 {
+#ifdef BAS_TEMP
  int i, m;
  long n;
  char *p,*prog;;
@@ -2357,10 +2400,12 @@ long veval_exp(char **prg, char *local, int port, char *perr)
  if (*prog==0xFF) prog++;
  *prg = prog;
  return pop(port);
+#endif //BAS_TEMP
 }
 
 long getvalelem(char **prg, long l, long c, char *local, char *perr)
 {
+#ifdef BAS_TEMP
  char *p,*prog;
  long n,i;
  prog = *prg;
@@ -2429,11 +2474,14 @@ long getvalelem(char **prg, long l, long c, char *local, char *perr)
 	}
  }
  return 0;
+#endif //BAS_TEMP
 }
 
 long localvalue(char *p, char *local)
 {
-  long l;
+	 long l;
+#ifdef BAS_TEMP
+ 
   switch(*p){
 		case FLOAT_TYPE:
 		case LONG_TYPE:
@@ -2446,11 +2494,13 @@ long localvalue(char *p, char *local)
 					l = (long)((signed char)local[*((int *)(p+1))])*1000L;
 					break;
 	}
+#endif //BAS_TEMP
 	return l;
 }
 
 long operand(char **prg, char **buf,char *local, char *perr)
 {
+#ifdef BAS_TEMP
  char *prog;
  prog = *prg;
  if (*prog >= LOCAL_VARIABLE && *prog <= BYTE_TYPE)    // local var
@@ -2505,11 +2555,13 @@ long operand(char **prg, char **buf,char *local, char *perr)
 	*prg = prog;
 	return *((long *)(prog-4));
  }
+#endif //BAS_TEMP
  return 0;
 }
 
 int get_ay_elem(char **prg, long *value, char *local, char *perr)
 {
+#ifdef BAS_TEMP
  char *prog;
  int num;
  byte point_type,num_point;
@@ -2530,10 +2582,12 @@ int get_ay_elem(char **prg, long *value, char *local, char *perr)
 		 *perr = 4;
  }
  *prg = prog;
+#endif //BAS_TEMP
 }
 
 int get_point(Point_Net point, long *value, char **buf, int mon)
 {
+#ifdef BAS_TEMP
  int i;
 // if( point.panel+1==Station_NUM && point.network==NetworkAddress )
  if( point.panel+1==Station_NUM && point.network==0xFFFF )
@@ -2583,13 +2637,16 @@ int get_point(Point_Net point, long *value, char **buf, int mon)
 	}
 
  }
+#endif // BAS_TEMP
 }
 
 int get_point(Point point, long *value, char **buf)
 {
+	byte num_point;
+#ifdef BAS_TEMP
  int range;
  char i;
- byte point_type,num_point;
+ byte point_type;
  point_type = point.point_type-1;
  num_point = point.number;
 
@@ -2672,6 +2729,7 @@ int get_point(Point point, long *value, char **buf)
  }
  else
 	 *value = 0;
+#endif //BAS_TEMP
  return num_point;
 }
 
@@ -2688,57 +2746,68 @@ void read_point(unsigned char mode, float *value, unsigned char num_point)
 
 void push(long value,int port)
 {
+#ifdef BAS_TEMP
  if(port==COM0)
 	 *index_stack++ = value;
  else
 	 *index_stack_virt++ = value;
+#endif //BAS_TEMP
 }
 
 
 //float pop(void)
 long pop(int port)
 {
+#ifdef BAS_TEMP
  if(port==COM0)
 	 return (*(--index_stack));
  else
 	 return (*(--index_stack_virt));
+#endif //#ifdef BAS_TEMP
 }
 
 void pushlong(unsigned long value,int port)
 {
+#ifdef BAS_TEMP
  if(port==COM0)
 	 memcpy(index_stack++, &value, 4);
  else
 	 memcpy(index_stack_virt++, &value, 4);
+ #endif //BAS_TEMP
 }
 
 
 unsigned long poplong(int port)
 {
  unsigned long value;
+#ifdef BAS_TEMP
  if(port==COM0)
  {
 	memcpy( &value, --index_stack, 4);
  }
  else
 	memcpy( &value, --index_stack_virt, 4);
+#endif //BAS_TEMP
  return (value);
 }
 
 
 int phone(char *message)    // phone call
 {
+#ifdef BAS_TEMP
  strcpy(dial_buffer, message);
  DIAL_dial  =1;
  DIAL_action=1;
  if( tasks[DIAL].status == SUSPENDED )
 		 resume(DIAL);
 // resume(DIAL);
+#endif //BAS_TEMP
 }
 
 int outputd(char* adr, int num, int port)
 {
   int i;
+#ifdef BAS_TEMP
   i = 0;
 	if( port!=COM0 )
   {
@@ -2765,11 +2834,13 @@ int outputd(char* adr, int num, int port)
 		 ((class ASYNCRON *)Routing_table[port].ptr)->port->resettxrunning();
 	 }
 	}
+#endif //BAS_TEMP
 	return i;
 }
 
 int print(char *message)  // print to printer
 {
+#ifdef BAS_TEMP
 	set_semaphore(&print_sem);
 	if( print_message_pool.put( message, strlen(message)+1 ) )
 	{
@@ -2779,6 +2850,7 @@ int print(char *message)  // print to printer
 		 resume(MISCELLANEOUS);
 	}
 	clear_semaphore(&print_sem);
+#endif //BAS_TEMP
   return 0;
 }
 
@@ -2793,6 +2865,7 @@ void alarm(void)
 
 void dalarmrestore(char *mes, int prg, int panel)
 {
+#ifdef BAS_TEMP
  int j;
  Alarm_point *ptr;
 
@@ -2824,10 +2897,12 @@ void dalarmrestore(char *mes, int prg, int panel)
 				return;
 			 }
  }
+ #endif //BAS_TEMP
 }
 
 int checkforalarm(char *mes, int prg, int panel, int id = 0 )
 {
+#ifdef BAS_TEMP
  Alarm_point *ptr;
  ptr = ptr_panel->alarms;
  for(j=0;j<MAX_ALARMS;ptr++,j++)
@@ -2850,11 +2925,13 @@ int checkforalarm(char *mes, int prg, int panel, int id = 0 )
 				return j+1;           // existing alarm
 		 }
  }
+#endif // BAS_TEMP
  return 0;  // alarm does not exist
 }
 
 int printalarmproc(char *mes, int j)
 {
+	#ifdef BAS_TEMP
  long t;
 
 		 t=ptr_panel->alarms[j-1].alarm_time;
@@ -2870,14 +2947,16 @@ int printalarmproc(char *mes, int j)
 		 strcat(&mes[strlen(mes)],"\\n");
 		 print(mes);  // print to printer
 		 ptr_panel->alarms[j-1].printer = 1;
+		 #endif //BAS_TEMP
 }
 
 // ret:  0 - no space for alarm, 1 - n alarm index, -1 message already on
 //int dalarm(char *mes, int prg, int panel)
 int generatealarm(char *mes, int prg, int panel, int type, char alarmatall,char indalarmpanel,char *alarmpanel,char printalarm)
 {
+	int j;
+#ifdef BAS_TEMP
  long t;
- int j;
  if( checkforalarm(mes,prg,panel)>0 ) return -1;
  j=putmessage(mes,prg,type,alarmatall,indalarmpanel,alarmpanel);    // alarm
  if ( j > 0 )    // new alarm message
@@ -2889,6 +2968,7 @@ int generatealarm(char *mes, int prg, int panel, int type, char alarmatall,char 
 		 printalarmproc(mes,j);
 	 }
  }
+ #endif //BAS_TEMP
  return j;
 }
 
@@ -2902,6 +2982,7 @@ int declare()
 
 void put_local_var(char *p, long value, char *local)
 {
+#ifdef BAS_TEMP
   switch(*p){
 		case FLOAT_TYPE:
 		case LONG_TYPE:
@@ -2914,10 +2995,12 @@ void put_local_var(char *p, long value, char *local)
 					local[*((int *)(p+1))]=(char)(value/1000L);
 					break;
 	}
+#endif //BAS_TEMP
 }
 
 int put_local_array(char *p, long value, long v1, long v2, char *local)
 {
+#ifdef BAS_TEMP
 	int k;
 	if( *((int *)&local[ *((int *)(p+1)) - 4]) )
 	{
@@ -2957,6 +3040,7 @@ int put_local_array(char *p, long value, long v1, long v2, char *local)
 				local[k]=(char)(value/1000L);
 				break;
 	}
+#endif //BAS_TEMP
   return 0;
 }
 
@@ -2967,6 +3051,7 @@ int put_point(Point_Net point, long value, int prog_op, int v)
 //int put_point(int point, float value, int ana_dig, int prog_op)
 int put_point(Point point, long value, int prog_op, int v, char *perr)
 {
+#ifdef BAS_TEMP
  union {
 		Str_out_point *pout;
 		Str_in_point *pin;
@@ -3087,6 +3172,6 @@ int put_point(Point point, long value, int prog_op, int v, char *perr)
 	 }
  }
  return num_point;
-}
-#endif
 #endif //BAS_TEMP
+}
+#endif //WORKSTATION

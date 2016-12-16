@@ -1,7 +1,12 @@
 #define SERIAL_COMM
 
 #if defined(SERIAL_COMM) || defined(NETWORK)
+#include <unistd.h>
+#include <signal.h>
+#include <time.h>
 #include <string.h>
+#include <fcntl.h>
+#include <stdio.h>
 //#include "netbios.h"
 #include "baseclas.h"
 #include "mtkernel.h"
@@ -35,8 +40,11 @@ extern int	print(char *message);
 extern int checkalarmentry(void);
 //extern int checkforalarm(char *mes, int prg, int panel, int t=0);
 extern int checkforalarm(char *mes, int prg, int panel, int id = 0 );
-extern uint search_point( Point &point, char *buff, char * & point_adr,
-																		uint & point_length, Search_type order );
+#ifdef BAS_TEMP
+uint search_point( Point &point, char *buff, char * & point_adr, uint & point_length, Search_type order );
+#else //BAS_TEMP
+uint search_point( Point &point, char *buff, char * point_adr, uint point_length, Search_type order );
+#endif //BAS_TEMP
 extern int get_point(Point point, long *value, char **p);
 extern unsigned long ReadTime( void );
 extern int update_prg(char *buf, int ind_prg, char *code, Str_program_point *ptrprg, int panel, GEdit *pe=NULL);    // buff=0 local, #0 dist
@@ -48,8 +56,10 @@ extern char *updatenetmemdig(int ind, int *length, char * = NULL);
 extern int put_point_info(Point_info *point_info);
 extern int	get_point_info(Point_info *point_info, char **des=NULL, char **label=NULL, char **ontext=NULL, char **offtext=NULL, char pri=0, int network = 0xFFFF);
 //extern char * rtrim( char * );
+#ifdef BAS_TEMP
 extern void save_m(void);
 extern void initanalogmon(void);
+#endif //BAS_TEMP
 extern int getfiles(char *term, char (*files)[13], int nmax, int local);
 extern int getdirectories(char *nname, char (*directories)[13], int nmax, int local);
 extern void update_alarm_tbl(Alarm_point *block, int max_points_bank );
@@ -83,12 +93,12 @@ extern char monitor_accessed;
 extern char *ptr_filetransfer;
 extern long length_filetransfer;
 extern char filetransfer_flag, filetransfer;
-extern char huge filetransfername[65];
+extern char filetransfername[65];
 extern char save_prg_flag;
 extern char int_disk1;
 extern char check_annual_routine_flag;
 extern char new_alarm_flag;
-extern char _far sendtime, sendtime_ipx;
+extern char sendtime, sendtime_ipx;
 
 extern unsigned char tbl_bank[MAX_TBL_BANK];
 extern unsigned update_t3000exe;
@@ -102,9 +112,9 @@ extern int milisec;
 extern long microsec;
 extern Panel_info1 Panel_Info1;
 extern char heap_grp_flag1, heap_grp_flag2;
-extern char far Icon_name_table[MAX_ICON_NAME_TABLE][14];
+extern char Icon_name_table[MAX_ICON_NAME_TABLE][14];
 
-extern char huge current_path[65],filename_tmp[65];
+extern char current_path[65],filename_tmp[65];
 char term_tr[13];
 
 //int execute_command( Media_type media, byte session, Command_type comm, Netbios *net_p,
@@ -112,7 +122,6 @@ char term_tr[13];
 int execute_command( Media_type media, Command_type comm, void *s_port,
 										 char *ser_data, struct TSMTable *ptrtable, int destport )
 {
-asm push es
 	byte comm_code, ex_high=0;
 	uint bank, res, n, len;
 	char *data_pointer, *ptr, moved=0;
@@ -258,7 +267,9 @@ asm push es
 						present_analog_monitor=0;
 						save_monitor = 0x01 | 0x02;
 						save_monitor_command = 1;
+#ifdef BAS_TEMP
 						save_m();
+#endif //BAS_TEMP
 						save_monitor_command=0;
 						save_monitor_status = 0;
 
@@ -268,12 +279,13 @@ asm push es
 						 memmove((void *)ptr, data_pointer, sizeof(Str_monitor_point));
 						 data_pointer +=  sizeof(Str_monitor_point);
 						}
+#ifdef BAS_TEMP
 						initanalogmon();
+#endif //BAS_TEMP
 						save_prg_flag = 1;
 					 }
 					}
 				 }
-				 asm pop es;
 				 return 0;
 				}
 /*			if( media == SERIAL_LINK )
@@ -342,7 +354,7 @@ asm push es
 				 {
 					 update_alarm_tbl((Alarm_point *)ser_data, ptrtable->length / sizeof(Alarm_point));
 				 }
-				 asm pop es;
+
 				 return 0;
 				}
 				else
@@ -415,7 +427,7 @@ asm push es
 				net_p->ses_info[session].state = SENDING_DATA;
 				net_p->send( session, net_p->ses_info[session].data, length );
 			}
-		 asm pop es
+
 			return 0;
 		 }
 		 else
@@ -426,13 +438,13 @@ asm push es
 				{
 					update_prg( ser_data, bank, NULL, NULL, Station_NUM );
 					save_prg_flag = 1;
-					asm pop es
+
 					return 0;
 				}
 				else
 				{
 				 length = ptr_panel->programs[bank].bytes;
-				 data_pointer = ptr_panel->program_codes[bank];
+				 data_pointer = (char *)ptr_panel->program_codes[bank];
 				}
 #endif
 				break;
@@ -477,13 +489,13 @@ asm push es
 				if( comm == TRANSFER_COMMAND )
 				{
 					send_grp( 2, length / sizeof( Str_grp_element ), bank, ( Str_grp_element *)(net_p->ses_info[session].buffer+8) );
-					asm pop es
+
 					return 0;
 				}
 				if( comm == TRANSFER_DATA )
 				{
 					send_grp( 2, length / sizeof( Str_grp_element ), bank, ( Str_grp_element *)net_p->ses_info[session].data );
-					asm pop es
+
 					return 0;
 				}
 				data_pointer = (char *)ptr_panel->control_group_elements[bank].ptrgrp;
@@ -497,7 +509,7 @@ asm push es
 				{
 					send_grp( 2, ptrtable->length / sizeof( Str_grp_element ), bank, ( Str_grp_element *)(ser_data) );
 					save_prg_flag = 1;
-					asm pop es
+
 					return 0;
 				}
 				else
@@ -514,7 +526,7 @@ asm push es
 					{
 					 if( !(l=port_ptr.cd->ser_pool.alloc(length)) )
 					 {
-						asm pop es;
+
 						return 1;
 					 }
 					 else
@@ -524,8 +536,9 @@ asm push es
 					 }
 					}
 					update_value_grp_elem(grp->ptrgrp,grp->nr_elements,3);
-					movedata( FP_SEG(grp->ptrgrp), FP_OFF(grp->ptrgrp),
-									 FP_SEG(ser_data), FP_OFF(ser_data), length);
+					//movedata( FP_SEG(grp->ptrgrp), FP_OFF(grp->ptrgrp),
+					//				 FP_SEG(ser_data), FP_OFF(ser_data), length);
+					memcpy(ser_data, grp->ptrgrp, length);
 					data_pointer = ser_data;
 					moved = 1;
 					entitysize = sizeof( Str_grp_element );
@@ -533,7 +546,7 @@ asm push es
 				 }
 				 else
 				 {
-					asm pop es;
+
 					return 1;
 				 }
 				}
@@ -596,7 +609,7 @@ asm push es
 //								 p->data_segment=q;
 								 save_prg_flag = 1;
 							 }
-							 asm pop es;
+
 							 return 0;
 							}
 #ifdef NETWORK_COMM
@@ -635,29 +648,41 @@ asm push es
 			{
 			 if( length == ptrtable->length )
 			 {
-				struct  time t;
+				//struct  time t;
+				struct timespec t;
+#ifdef BAS_TEMP
 				struct date d;
+#endif //BAS_TEMP
 				disable();
 				memmove(data_pointer, ser_data, sizeof(Time_block));
-				t.ti_hund=0; t.ti_sec=ora_current.ti_sec+1;
-				t.ti_min=ora_current.ti_min; t.ti_hour=ora_current.ti_hour;
-				settime(&t);
+				//t.ti_hund=0; t.ti_sec=ora_current.ti_sec+1;
+				//t.ti_min=ora_current.ti_min; t.ti_hour=ora_current.ti_hour;
+				//settime(&t);
+				//TBD: Check whether the time set is correct
+				clock_gettime( CLOCK_REALTIME, &t);
+				t.tv_sec += (ora_current.ti_hour*60*60) + (ora_current.ti_min*60) + ora_current.ti_sec+1;
+				t.tv_nsec = 0;
+				clock_settime( CLOCK_REALTIME, &t);
+				
 //				gettime(&ora_start);
 //				timesec1970=time(NULL);
 //				ora_current_sec = (unsigned long)ora_start.ti_hour*3600L+(unsigned long)ora_start.ti_min*60L+(unsigned long)ora_start.ti_sec;
 //				timestart=0;
 //				milisec = 0;
 //				microsec = 0;
+#ifdef BAS_TEMP
+//TBD: Uncomment and replace with appropriate date apis
 				d.da_year = ora_current.year + 1900;
 				d.da_day = ora_current.dayofmonth;
 				d.da_mon = ora_current.month+1;
 				setdate(&d);
+#endif //BAS_TEMP
 				updatetimevars();
         sendtime = 1;
         sendtime_ipx = 1;
 				enable();
 			 }
-			 asm pop es;
+
 			 return 0;
 			}
 			break;
@@ -698,7 +723,7 @@ asm push es
 					}
 					net_p->ses_info[session].state = SENDING_COMMAND;
 					net_p->send( session, net_p->ses_info[session].buffer, len );
-			 asm pop es
+
 					return 0;
 				}
 				if( comm == SEND_DATA )
@@ -719,7 +744,7 @@ asm push es
 					if(comm_code==READMONITORDATA_T3000)
 					{
 //						if( free_pool_index ) {asm pop es; return 1;}
-						if( !(l=port_ptr.cd->ser_pool.alloc(SERIAL_BUF_SIZE-800)) ) { asm pop es; return 1;}
+						if( !(l=port_ptr.cd->ser_pool.alloc(SERIAL_BUF_SIZE-800)) ) { return 1;}
 						else
 						{
 						 ser_data = port_ptr.cd->ser_data+l;
@@ -729,7 +754,7 @@ asm push es
 					}
 					if(comm_code==UPDATEMEMMONITOR_T3000)
 					{
-						if( !(l=port_ptr.cd->ser_pool.alloc(7000)) ) { asm pop es; return 1;}
+						if( !(l=port_ptr.cd->ser_pool.alloc(7000)) ) { return 1;}
 						else
 						{
 						 ser_data = port_ptr.cd->ser_data+l;
@@ -757,7 +782,7 @@ asm push es
 			struct point_info_table *point_info_table;
 			Point_Net *pi;
 			length = MAX_POINTS_IN_MONITOR*sizeof(struct point_info_table);
-			if( !(l=port_ptr.cd->ser_pool.alloc(length)) ) { asm pop es; return 1;}
+			if( !(l=port_ptr.cd->ser_pool.alloc(length)) ) { return 1;}
 			else
 			{
 				 ser_data = port_ptr.cd->ser_data+l;
@@ -827,7 +852,7 @@ asm push es
 				 send_grp( (bank&0x00FF)+3, ptrtable->length / sizeof( Str_grp_element ), (bank>>8), ( Str_grp_element *)(ser_data), 2, 1, 0, 0, ptrtable->res );
 				 save_prg_flag = 1;
 				}
-				asm pop es
+
 				return 0;
 		case 27:
 		{
@@ -876,7 +901,7 @@ asm push es
 		}
 		case 47:
 		{
-			uint type;
+			//uint type;
 			len = 0;
 #ifdef NETWORK_COMM
 			if(media == NETBIOS )
@@ -901,7 +926,6 @@ asm push es
 					}
 					net_p->ses_info[session].state = SENDING_COMMAND;
 					net_p->send( session, net_p->ses_info[session].buffer, len );
-			 asm pop es
 					return 0;
 				}
 				if( comm == SEND_DATA )
@@ -913,7 +937,7 @@ asm push es
 																				DESCRIPTOR_POINT );
 					net_p->ses_info[session].state = SENDING_DATA;
 					net_p->send( session, net_p->ses_info[session].data, length );
-					asm pop es
+
 					return 0;
 				}
 			}
@@ -926,7 +950,7 @@ asm push es
 //					len = ptrtable->arg;
 					point.point_type = ptrtable->arg;
 					length = search_point( point, NULL, NULL, 0, LENGTH_POINT );
-					if( !(l=port_ptr.cd->ser_pool.alloc(length)) ) { asm pop es; return 1;}
+					if( !(l=port_ptr.cd->ser_pool.alloc(length)) ) {  return 1;}
 					else
 					{
 					 ser_data = port_ptr.cd->ser_data+l;
@@ -934,7 +958,7 @@ asm push es
 					}
 /*
 					if(media==RS485_LINK)
-					 if (free_pool_index+length>=SERIAL_BUF_SIZE){ asm pop es; return 1;}
+					 if (free_pool_index+length>=SERIAL_BUF_SIZE){  return 1;}
 */
 					data_pointer = ser_data;
 					search_point( point, data_pointer, NULL, 0, DESCRIPTOR_POINT );
@@ -982,7 +1006,7 @@ asm push es
 						port_ptr.sr->FlushRXbuffer();
 						port_ptr.sr->FlushTXbuffer();
 						port_ptr.sr->activity = FREE;
-						asm pop es
+				
 						return 0;
 				case 21:
 //					if( ptr_panel )
@@ -1082,7 +1106,7 @@ asm push es
 				case 36:
 					if(!ptr_filetransfer)
 					{
-					 asm pop es
+				
 					 return 0;
 					}
 					data_pointer = ptr_filetransfer;
@@ -1110,7 +1134,7 @@ asm push es
 				case 40:
 				 char cur[65];
 				 {
-					if( !(l=port_ptr.cd->ser_pool.alloc(7000)) ) { asm pop es; return 1;}
+					if( !(l=port_ptr.cd->ser_pool.alloc(7000)) ) {  return 1;}
 					else
 					{
 						 ser_data = port_ptr.cd->ser_data+l;
@@ -1133,7 +1157,7 @@ asm push es
 				 break;
 				case 41:
 				 {
-					if( !(l=port_ptr.cd->ser_pool.alloc(1500)) ) { asm pop es; return 1;}
+					if( !(l=port_ptr.cd->ser_pool.alloc(1500)) ) {  return 1;}
 					else
 					{
 						 ser_data = port_ptr.cd->ser_data+l;
@@ -1204,14 +1228,14 @@ asm push es
 						rename(&ser_data[65],ser_data);
 					clear_semaphore_dos();
 					}
-					asm pop es
+				
 					return 0;
 				case 50:
 					if(control)
 					{
 					 ptr_panel->Aio_Control( RESET_PC, NULL, 0 );
 					}
-					asm pop es
+					
 					return 0;
 				case ALARM_NOTIFY_COMMAND:
 					length = 1;
@@ -1229,7 +1253,7 @@ asm push es
 					 action=1;
 					 if( tasks[MISCELLANEOUS].status == SUSPENDED )
 						resume(MISCELLANEOUS);
-					 asm pop es
+					 
 					 return 0;
 					}
 					else
@@ -1316,7 +1340,7 @@ asm push es
 				case INFODATA_COMMAND:
 					if( !(l=port_ptr.cd->ser_pool.alloc(510)) )
 					{
-						asm pop es;
+						
 						return 1;
 					}
 					else
@@ -1566,7 +1590,7 @@ asm push es
 		{
 			if( length == ptrtable->length )
 			{
-				_fmemcpy( data_pointer, ser_data, length );
+				memcpy( data_pointer, ser_data, length );
 				save_prg_flag = 1;
 				if ( comm_code==AR_Y+1 )
 				{
@@ -1580,16 +1604,17 @@ asm push es
 			if(!moved)
 			{
 //			if(media==RS485_LINK && !moved)
-//			  if ( free_pool_index+length>=SERIAL_BUF_SIZE){ asm pop es; return 1;}
+//			  if ( free_pool_index+length>=SERIAL_BUF_SIZE){  return 1;}
 			if( !(l=port_ptr.cd->ser_pool.alloc(length)) )
-				{ asm pop es; return 1;}
+				{  return 1;}
 			else
 			{
 			 ser_data = port_ptr.cd->ser_data+l;
 			 ptrtable->pool_index = l;
 			}
-			movedata( FP_SEG(data_pointer), FP_OFF(data_pointer),
-							FP_SEG(ser_data), FP_OFF(ser_data), length);
+			//movedata( FP_SEG(data_pointer), FP_OFF(data_pointer),
+			//				FP_SEG(ser_data), FP_OFF(ser_data), length);
+			memcpy(ser_data, data_pointer, length);
 			}
 //		  if(media==RS485_LINK)
 //		  if( media == SERIAL_LINK || media == MODEM_LINK || media == RS485_LINK )
@@ -1634,7 +1659,6 @@ asm push es
 		}
 	}
 #endif
- asm pop es
  return 0;
 }
 #endif

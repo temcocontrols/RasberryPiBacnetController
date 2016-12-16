@@ -91,7 +91,7 @@ class Point_Net {
 		int operator==(Point_Net compare);
 		void operator=(const Point_Net &copy);
 };
-#ifdef BAS_TEMP
+
 typedef struct{
 	long prev_header;
 	char n_inputs;
@@ -110,7 +110,7 @@ typedef struct{
 	unsigned long time_last_sample;
 	unsigned n_sample;
 } Header_amon;
-#endif //BAS_TEMP
+
 typedef struct {
 	Point_Net point;
 	long point_value;
@@ -841,12 +841,12 @@ class Array_block: public Block
 	 int Read(int , char);
 	 ~Array_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	long value;
 } Str_ayvalue_point;
-
+#ifdef BAS_TEMP
 class Ayvalue_block: public Block
 {
  public:
@@ -1017,7 +1017,7 @@ public:
 	int Read(int , char);
 	~Password_block();
 };
-
+#endif //BAS_TEMP
 typedef struct	// (size = 6 byte s)
 {
 	int value; 		       // (10 byte s; string)
@@ -1029,7 +1029,7 @@ typedef struct
 	char label[9];		      // (9 bytes; string)*/
 	Tbl_point table[16];
 } Str_tbl_point;      // size = 9+6*16 = 105
-
+#ifdef BAS_TEMP
 class Tbl_block: public Block
 {
 public:
@@ -1320,9 +1320,7 @@ class ConnectionData
 		Panel_info1 			panel_info1;
 		unsigned long 		need_info;
 		Station_point 		station_list[MAX_STATIONS];
-#ifdef BAS_TEMP
 		POOL              ser_pool;
-#endif //BAS_TEMP
 		Media_type			  media;
 		char 							*ser_data;
 		byte						  task_number;

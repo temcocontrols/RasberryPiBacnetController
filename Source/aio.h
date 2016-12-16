@@ -224,8 +224,9 @@ class Aio
 		void init_info_table( void );
 		//	void Aio::setcodeprg(int routine_num);
 };
-
+#ifdef BAS_TEMP
 class GWDialog;
+#endif //BAS_TEMP
 
 class Panel:public Aio
 {
@@ -251,7 +252,9 @@ class Panel:public Aio
 		byte	point_type;
 		void select_panel(int);
 		void select_subpanel();
+#ifdef BAS_TEMP
 		void subselect(GWDialog *D);
+#endif //BAS_TEMP
 		//			void Select(int man,char **argv, char **message);
 		void Select(int man);
 		int  connect_panel_proc(int t=0);
@@ -262,12 +265,13 @@ class Panel:public Aio
 		int loadprg(char *file, Panel_info1 *panel_info, unsigned char *tblbank, int local=1, int control=1);
 		int file(int man=-1);
 		int savefile(char *, Panel_info1 *panel_info, unsigned char *tblbank, int local=1);
-
+#ifdef BAS_TEMP
 		friend void file_path_o1(GWDialog *D);
 		friend void file_path_o2(GWDialog *D);
 		friend void file_path_o3(GWDialog *D);
 		friend void file_path_o4(GWDialog *D);
 		friend void file_path_o5(GWDialog *D);
 		friend void pselect(GWDialog *D);
+#endif //BAS_TEMP
 };
 #endif //_AIO_H

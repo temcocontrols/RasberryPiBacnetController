@@ -395,8 +395,11 @@ void Point_Net::operator=(const Point_Net &copy)
  network = copy.network;
 }
 
-uint search_point( Point &point, char *buff, char * & point_adr,
-																		uint & point_length, Search_type order )
+#ifdef BAS_TEMP
+uint search_point( Point &point, char *buff, char * & point_adr, uint & point_length, Search_type order );
+#else //BAS_TEMP
+uint search_point( Point &point, char *buff, char * point_adr, uint point_length, Search_type order );
+#endif //BAS_TEMP
 {
 	asm push es
 	byte i, j, no_of_points, type, position = 255;

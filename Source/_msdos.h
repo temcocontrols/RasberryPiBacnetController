@@ -18,5 +18,7 @@ enum BusType { ISA_BUS, MCA_BUS };
 BusType Bus( void );*/
 void Delay( unsigned long );
 
+long filelength(int fhandle);
+
 
 #endif  // #ifndef __MSDOS_DOT_H

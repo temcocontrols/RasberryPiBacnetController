@@ -16,6 +16,8 @@
  * INCLUDEs
  *****************************************************************************/
 
+#include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "t3000def.h"
@@ -101,4 +103,17 @@ void Delay( unsigned long time )
 		return ISA_BUS;
 }
   */
+ 
+ //TBD: Not compatible to DOS version of filelength(). Please do it.
+ long filelength(int fhandle)
+ {
+	long sz = 0;
+	 
+	fseek((FILE *)fhandle, 0L, SEEK_END);
+	sz = ftell((FILE *)fhandle);
+	fseek((FILE *)fhandle, 0L, SEEK_SET);
+	
+	return sz;
+ }
+ 
 // *********************** END OF MSDOS.CPP ***********************

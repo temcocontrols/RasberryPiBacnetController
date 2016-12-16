@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <string.h> 
 #include <stdbool.h>
+#include <stdlib.h>
 #include "baseclas.h"
 #include "aio.h"
 #include "mtkernel.h"
@@ -27,6 +28,7 @@
 //#include "ptp.h"
 #include "net_bac.h"
 #include "t3000def.h"
+//#include "_8250.h"
 
 /******************************************************************************
  * PREPROCESSORs
@@ -109,8 +111,11 @@ extern int writepropertystate(BACnetObjectIdentifier obj, long lvalue, int t=0);
 extern int writepropertyvalue(BACnetObjectIdentifier obj, long lvalue);
 extern int writepropertyauto(BACnetObjectIdentifier obj, int auto_manual);
 extern void communication_sign(long done, long total);
-extern uint search_point( Point &point, char *buff, char * & point_adr,
-																		uint & point_length, Search_type order );
+#ifdef BAS_TEMP
+uint search_point( Point &point, char *buff, char * & point_adr, uint & point_length, Search_type order );
+#else //BAS_TEMP
+uint search_point( Point &point, char *buff, char * point_adr, uint point_length, Search_type order );
+#endif //BAS_TEMP
 //extern int	get_point_info(Point_info *point_info, char **des=NULL, char **label=NULL, char **ontext=NULL, char **offtext=NULL, char pri=0, int network = 0xFFFF);
 extern int get_point_info1(Point_info *point_info);
 
@@ -124,6 +129,8 @@ unsigned int CalcDataCRC(unsigned char dataValue, unsigned int crcValue);
 int compressdata(char *dest, int length_dest, char *source, int length_source, int *l);
 int uncompress(char *dest, int length_dest, char *source, int length_source);
 int encodetag(char cl, char t, char *tag, unsigned length);
+int execute_command( Media_type media, Command_type comm, void *s_port,
+										 char *ser_data, struct TSMTable *ptrtable, int destport );
 
 // list used by router to store the request for a diferrent network
 Point_Net              request_router_points_list[MAXREMOTEPOINTS82];
@@ -4990,19 +4997,24 @@ void MSTP::SendFrame(FRAME *frame, char wait)
 	switch(rate/480){
 	 case 0:
 	 case 1:
-		 delay(8);
+		 //delay(8);
+		 usleep(8000);
 		 break;
 	 case 2:
-		 delay(5);
+		 //delay(5);
+		 usleep(5000);
 		 break;
 	 case 4:
-		 delay(3);
+		 //delay(3);
+		 usleep(3000);
 		 break;
 	 case 8:
-		 delay(2);
+		 //delay(2);
+		 usleep(2000);
 		 break;
 	 default:
-		 delay(1);
+		 //delay(1);
+		 usleep(1000);
 		 break;
 	}
 //	delay(5);
@@ -5017,7 +5029,7 @@ void MSTP::SendFrame(FRAME *frame, char wait)
 
 	//  port->Rts( 0 );
 // disable the receiver and enable the transmit line driver
-	status = port->write_buffer( (char *)frame, ind+8 );
+	status = (RS232Error)port->write_buffer( (char *)frame, ind+8 );
 /*
 	if( ind > (60L*(long)rate)/1000 )     // 60ms*Rate/1000
 	{
@@ -5097,7 +5109,9 @@ void MSTP::SendFrame(FRAME *frame, char wait)
 
 char getID(void)
 {
- return random(254);
+ //return random(254);
+ //TBD: Above DOS random() takes a value. Replace your rand() func with appropriate one
+ return rand();
 }
 
 int networklayer( int service, int priority, int network, int destination, int source,

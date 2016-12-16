@@ -42,8 +42,11 @@ extern Point_Net _far request_router_points_list[MAXREMOTEPOINTS82];
 extern Panel *ptr_panel;
 
 extern int encodetag(char cl, char t, char *tag, unsigned length);
-extern uint search_point( Point &point, char *buff, char * & point_adr,
-																		uint & point_length, Search_type order );
+#ifdef BAS_TEMP
+uint search_point( Point &point, char *buff, char * & point_adr, uint & point_length, Search_type order );
+#else //BAS_TEMP
+uint search_point( Point &point, char *buff, char * point_adr, uint point_length, Search_type order );
+#endif //BAS_TEMP
 
 extern int networklayer( int service, int priority, int network, int destination, int source,
 				char *asdu_npdu, int length_asdu_npdu, char *apci, int length_apci,

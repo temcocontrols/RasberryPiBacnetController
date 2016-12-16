@@ -42,7 +42,7 @@
 //    Class GGraph        //
 //                       //
 ///////////////////////////
-
+#ifdef BAS_TEMP
 class GGraph:public GWDialog
 {
  public:
@@ -124,5 +124,5 @@ class GGraph:public GWDialog
 //	void *operator new(size_t size){return(newalloc((long)size));};
 //  void operator delete(void *ptr){newdelete(ptr);};
 };
-
+#endif //BAS_TEMP
 #endif

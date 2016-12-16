@@ -128,8 +128,11 @@ void About(void);
 extern int netstat_show(void); 
 extern void set16( rgb * pal, int nclrs );
 extern int texttointerval( char *textbuffer,char *seconds , char *minutes , char *hours, char c=':' );
-extern uint search_point( Point &point, char *buff, char * & point_adr,
-																		uint & point_length, Search_type order );
+#ifdef BAS_TEMP
+uint search_point( Point &point, char *buff, char * & point_adr, uint & point_length, Search_type order );
+#else //BAS_TEMP
+uint search_point( Point &point, char *buff, char * point_adr, uint point_length, Search_type order );
+#endif //BAS_TEMP
 extern int local_request(int panel, int network);
 extern int local_request(int panel);
 extern unsigned int countlength(int command, int arg);
@@ -387,25 +390,25 @@ char tables_text[5][10]={
 	{" Table 4 "},
 	{" Table 5 "}
 };
-char *autodetect="Auto Detect";
-char *ctrlbreak_text="    CTRL/Break - Interrupt";
-char *ok_button    =" < OK > ";
-char *cancel_button="<Cancel>";
-char *exit_button    =" <eXit> ";
-char *noexit_button  ="<No exit>";
-char *version ="2.59";    // May 14, 19998
+char autodetect[]="Auto Detect";
+char ctrlbreak_text[]="    CTRL/Break - Interrupt";
+char ok_button[]    =" < OK > ";
+char cancel_button[]="<Cancel>";
+char exit_button[]    =" <eXit> ";
+char noexit_button[]  ="<No exit>";
+char version[] ="2.59";    // May 14, 19998
 int Version = 259;    //2.56
 int cnf_version;
 
-char *loadpanel_text ="Load panel ";
-char *savepanel_text ="Save panel ";
-char *renamefile_text ="Rename file ";
-char *deletefile_text ="Delete file ";
-char *rebootm = " The panel is saving it's PRG into the Flash memory.         It will take about 30 seconds.";
-char *saveprgflashtxt = " The program was not saved in the Flash memory!";
-char *panel_text1="PANEL ";
-char *wait_text = " Wait ...";
-char *signature = "!@#$";
+char loadpanel_text[] ="Load panel ";
+char savepanel_text[] ="Save panel ";
+char renamefile_text[] ="Rename file ";
+char deletefile_text[] ="Delete file ";
+char rebootm[] = " The panel is saving it's PRG into the Flash memory.         It will take about 30 seconds.";
+char saveprgflashtxt[] = " The program was not saved in the Flash memory!";
+char panel_text1[]="PANEL ";
+char wait_text[] = " Wait ...";
+char signature[] = "!@#$";
 
 #ifdef BAS_TEMP
 Password_struct passwords;
@@ -495,7 +498,7 @@ char supervisor[]="TRAVEL";
 
 int ex_apl=1;
 char LOADPRG, loadprgremote;
-static FILE *h;
+//static FILE *h;
 #ifdef BAS_TEMP
 Point_Net nested_grp[MAX_NEST_GRP];
 int ind_nested_grp;
@@ -652,10 +655,10 @@ char characters_font[] =
 #define MODE_GRAPHIC 0
 #define TEXT_FOND_COLOR White
 
-char *lin_read ="北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北";
+char lin_read[] ="北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北";
 //char *lin_text="圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹";
-char *lin_text  ="                                                                                 ";
-char *prg_text  ="*.PRG";
+char lin_text[]  ="                                                                                 ";
+char prg_text[]  ="*.PRG";
 //char iconf[4]={0x0f,0x0f,0x0f,0x0f};
 //char oconf[4]={0x0f0,0x0f0,0x0f0,0x0f0};
 

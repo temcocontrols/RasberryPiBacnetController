@@ -1,4 +1,4 @@
-#ifdef BAS_TEMP
+
 // ********************** START OF _8250.H **********************
 //
 //
@@ -74,4 +74,3 @@ const int DIVISOR_LATCH_HIGH                  = 0x01;
 #endif // #ifndef _8250_DOT_H
 
 // ************************ END OF _8250.H ***********************
-#endif //BAS_TEMP

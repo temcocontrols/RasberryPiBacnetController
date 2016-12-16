@@ -58,7 +58,7 @@ class Netstatus_block;
 //    Class GGrid        //
 //                       //
 ///////////////////////////
-
+#ifdef BAS_TEMP
 class GGrid:public GWDialog
 {
  public:
@@ -234,5 +234,5 @@ class GGrid:public GWDialog
 // *********   end    ***************
 // ***********************************
 };
-
+#endif //BAS_TEMP
 #endif

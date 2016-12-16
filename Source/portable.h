@@ -9,10 +9,13 @@
 #ifndef _PORTABLE_DOT_H
 #define _PORTABLE_DOT_H
 
+#include <sys/io.h>
+#include <stdio.h>
+
 //#if defined(__TURBOC__) && (__TURBOC__ < 0x400 )
 #define COMPILER             "Borland C++ 2.0/Turbo C++ 1.0"
-#define INPUT( port )        inportb( port )
-#define OUTPUT( port, data ) (void) outportb( port, data )
+#define INPUT( port )        inb( port )
+#define OUTPUT( port, data ) (void) outb( data, port  )
 #define CLI()                disable()
 #define STI()                enable()
 #define UNUSED( a )          if ( a != a ) a = 0

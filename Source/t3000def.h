@@ -17,6 +17,7 @@
 typedef unsigned int   uint;
 typedef unsigned char  byte;
 typedef unsigned long  ulong;
+typedef unsigned int   word;
 
 //#define TIME_COMMAND          21
 
@@ -279,9 +280,6 @@ typedef unsigned long  ulong;
 #define MAX_DIGITAL_SAMPLES_PER_BLOCK 112
 
 #define TIMEOUT_NETCALL 20
-#define byte  unsigned char
-#define word  unsigned int
-#define ulong unsigned long
 
 #define MAX_COMM_INFO 9
 
