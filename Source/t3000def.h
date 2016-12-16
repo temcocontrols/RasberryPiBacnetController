@@ -14,9 +14,9 @@
  * PREPROCESSORs
  *****************************************************************************/
  
-#define uint	unsigned int
-#define byte	unsigned char
-#define ulong	unsigned long
+typedef unsigned int   uint;
+typedef unsigned char  byte;
+typedef unsigned long  ulong;
 
 //#define TIME_COMMAND          21
 
@@ -808,6 +808,7 @@ typedef struct {
 	long                            time_modem;
 } PORT_STATUS_variables;
 
+#include <cstddef>
 #include "router.h"
 
 typedef struct {

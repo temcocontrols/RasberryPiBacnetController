@@ -16,6 +16,10 @@
 
 #define min(a,b)    (((a) < (b)) ? (a) : (b))
 
+//TBD: READ/WRITE macro values are assumed. Please find linux compatible macro
+#define READ 0
+#define WRITE 1
+
 #define CTRLBREAK			      -1
 #define OFF 0
 #define ON 1

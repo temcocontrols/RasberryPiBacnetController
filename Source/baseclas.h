@@ -51,14 +51,14 @@ typedef union 	{
 	Analog_units_equate analog_unit;
 	Digital_units_equate digital_unit;
 } Point_info_units;
-
+#endif //BAS_TEMP
 /* Point*/
 class Point{
 	public:
 		byte number;
 		byte point_type;
 };
-#endif //BAS_TEMP
+
 /* Point_T3000;*/
 class Point_T3000 {
 	public:
@@ -254,7 +254,7 @@ typedef struct
 	byte nummber_of_groups;
 	Str_grp_element *str_grp_element;
 } Str_grp_block;
-
+#endif //BAS_TEMP
 typedef struct
 {
 	int second;		// 0-59
@@ -268,7 +268,7 @@ typedef struct
 	int unused;
 } Time_block_sm;
 
-
+#ifdef BAS_TEMP
 typedef struct {
 	byte grpsize;       // 0-6 inputs per analog monitor
 	byte number_of_mon; // 0-99 monitors with this definition
@@ -1254,7 +1254,7 @@ public:
 	 int Read(int , char);
 	 ~Netstatus_block();
 };
-
+#endif //BAS_TEMP
 typedef struct
 {
 	int  ti_sec;         // 0-59
@@ -1267,7 +1267,7 @@ typedef struct
 	int  dayofyear;    // 0-365 gmtime
 	int  isdst;
 } Time_block;
-
+#ifdef BAS_TEMP
 typedef struct
 {
 	byte  ti_sec;         // 0-59
@@ -1297,7 +1297,7 @@ typedef struct
 {
 	Point_info		info;
 }	NETWORK_POINTS;
-#ifdef BAS_TEMP
+
 typedef struct
 {
 	char			  	state;
@@ -1308,7 +1308,7 @@ typedef struct
 	unsigned		 	read_write	:2;
 	unsigned		 	change		:2;
 }	REMOTE_POINTS;
-#endif //BAS_TEMP
+
 class ConnectionData
 {
 	public:

@@ -1,27 +1,55 @@
-#ifdef BAS_TEMP
+/******************************************************************************
+ * File Name: mstp.cpp
+ * 
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+ 
 #define RS485
 
-#include <mem.h>
-#include <windows.h>
-#include <graphics.h>
+/******************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+ 
+#include <unistd.h>
+#include <signal.h>
+#include <string.h> 
+#include <stdbool.h>
+#include "baseclas.h"
 #include "aio.h"
 #include "mtkernel.h"
 #include "serial.h"
 #include "rs485.h"
-#include "gwin.h"       
-#include "giflzw.hpp"
-#include "ptp.h"
+//#include "gwin.h"       
+//#include "giflzw.hpp"
+//#include "ptp.h"
 #include "net_bac.h"
+#include "t3000def.h"
 
+/******************************************************************************
+ * PREPROCESSORs
+ *****************************************************************************/
+ 
 //#define RS485_LINK    0
 #define ON   1
 #define OFF  0
 #define CTRLBREAK			      -1
 
+//TBD: READ/WRITE macro values are assumed. Please find linux compatible macro
+#define READ 0
+#define WRITE 1
+
 /*
 int rr1, rr2;
 char rrr_buf[20];
 */
+
+/******************************************************************************
+ * GLOBALs
+ *****************************************************************************/
+ 
 int Max_frame_minirouter=270;
 
 //char tttt, tt=1, ttt, zzzz, yy[10];
@@ -32,9 +60,9 @@ extern char control;
 extern char new_alarm_flag;
 extern int maxelem_grouppool;
 extern int curelem_grouppool;
-extern char huge *lin_text;
+extern char *lin_text;
 extern int NetworkAddress;
-extern char far NetworkName[NAME_SIZE];
+extern char  NetworkName[NAME_SIZE];
 extern char table_crc8[256];
 
 extern Panel_info1 Panel_Info1;
@@ -62,7 +90,7 @@ extern Time_block ora_current;
 //extern char tx_running[3];
 extern unsigned long starttime;
 extern long microsec;
-extern char huge *ctrlbreak_text;
+extern char *ctrlbreak_text;
 extern long data_const, data_length_const;
 //extern char showsign;
 extern char readmon_flag, savemon_flag, update_prg_flag, readfiles_flag;
@@ -98,12 +126,12 @@ int uncompress(char *dest, int length_dest, char *source, int length_source);
 int encodetag(char cl, char t, char *tag, unsigned length);
 
 // list used by router to store the request for a diferrent network
-Point_Net             _far request_router_points_list[MAXREMOTEPOINTS82];
-NETWORK_POINTS      	_far response_router_points_list[MAXNETWORKPOINTS];
+Point_Net              request_router_points_list[MAXREMOTEPOINTS82];
+NETWORK_POINTS      	 response_router_points_list[MAXNETWORKPOINTS];
 
-extern NETWORK_POINTS	_far network_points_list[MAXNETWORKPOINTS];
+extern NETWORK_POINTS	 network_points_list[MAXNETWORKPOINTS];
 //WANT_POINTS		   want_points_list[MAXREMOTEPOINTS];
-extern REMOTE_POINTS  _far remote_points_list[MAXREMOTEPOINTS82];
+extern REMOTE_POINTS   remote_points_list[MAXREMOTEPOINTS82];
 extern int remote_list_last_index_mstp, remote_list_last_index_ipx;
 extern char int_disk, int_disk1;
 
@@ -114,7 +142,7 @@ signed char wantpointsentry, wantpointsentry_router;
 signed char np_ipx_networkpoints_type, np_rs485_networkpoints_type;
 signed char wp_ipx_networkpoints_type, wp_rs485_networkpoints_type;
 int timepoints=400;
-char _far sendtime, sendtime_ipx;
+char sendtime, sendtime_ipx;
 int maxFrame;
 //char writeretry_flag;
 //MSTP *mstpport1;
@@ -125,7 +153,8 @@ int sendpoints(char *asdu, char type, int port, int net) //0 want_points, 1 netw
 {
 	class ConnectionData *cdata;
 	class Point_Net point;
-	int  i,j,k,l,length_apci,np;
+	int  i,j,k,np;
+	//int l, length_apci;
 	REMOTE_POINTS *premote_points_list;
 
 	cdata = (class ConnectionData *)Routing_table[port].ptr;
@@ -268,7 +297,7 @@ void MSTP::sendpoints(char *asdu, char type) //0 want_points, 1 network_points
  class Point_Net point;
 // char apci[MAXAPCI];
  REMOTE_POINTS *premote_points_list;
- int  i,j,k,l,length_apci,np;
+ int  i,j,k,length_apci,np;
 	asdu += MAXAPCI;
 	i=0;
 
@@ -500,8 +529,8 @@ int MSTP_RECEIVEDFRAMEPOOL::NextFreeEntry(int t)
  if ( temp_head == TailFrame )
 	 overflow=1;
  HeadFrame = temp_head;
- ReceivedFrame[h].ReceivedValidFrame=FALSE;
- ReceivedFrame[h].ReceivedInvalidFrame=FALSE;
+ ReceivedFrame[h].ReceivedValidFrame=false;
+ ReceivedFrame[h].ReceivedInvalidFrame=false;
  asm pop es;
  return h;
 }
@@ -512,7 +541,7 @@ void *MSTP_RECEIVEDFRAMEPOOL::NextFreeEntry( void )
 // int nextentry;
  int i;
 // int j;
- asm push es;
+
 // j = entry;
  for(i=0; i<MSTP_NMAXRECEIVEDFRAMEPOOL; i++)
  {
@@ -523,7 +552,7 @@ void *MSTP_RECEIVEDFRAMEPOOL::NextFreeEntry( void )
 	}
 //	if ( ++j >= MSTP_NMAXRECEIVEDFRAMEPOOL ) j=0;
  }
- asm pop es;
+ 
  if ( i >= MSTP_NMAXRECEIVEDFRAMEPOOL ) return 0;
  return (void *)&ReceivedFrame[i];
 /*
@@ -545,15 +574,15 @@ int MSTP_RECEIVEDFRAMEPOOL::RemoveEntry(MSTP_ReceivedFrame *pframe)
 {
  int i;
 // int j;
- asm push es;
- pframe->ReceivedValidFrame = pframe->ReceivedInvalidFrame = FALSE;
+
+ pframe->ReceivedValidFrame = pframe->ReceivedInvalidFrame = false;
 // j = entry;
  for(i=0; i< MSTP_NMAXRECEIVEDFRAMEPOOL; i++)
  {
 	if( ReceivedFrame[i].status==1 ) break;
 //	if ( ++j >= MSTP_NMAXRECEIVEDFRAMEPOOL ) j=0;
  }
- asm pop es;
+
  if ( i >= MSTP_NMAXRECEIVEDFRAMEPOOL ) return -1;
  memcpy(pframe, &ReceivedFrame[i], sizeof(MSTP_ReceivedFrame));
 // if ( ++entry >= MSTP_NMAXRECEIVEDFRAMEPOOL ) entry=0;
@@ -579,11 +608,11 @@ MSTP_SENDFRAMEPOOL::MSTP_SENDFRAMEPOOL(void)
 int SENDFRAMEPOOL::NextFreeEntry(void)
 {
 	int h,temp_head;
-	int r,i;
-	asm push es;
+	//int r,i;
+
 	if( access && lockedhead )
 	{
-	 asm pop es;
+
 	 return -1;
 	}
 	access=1;
@@ -602,7 +631,7 @@ int SENDFRAMEPOOL::NextFreeEntry(void)
 	 HeadFrame = temp_head;
 	}
 	access=0;
-	asm pop es;
+
 	return h;
 }
 
@@ -611,10 +640,10 @@ int MSTP_SENDFRAMEPOOL::NextFreeEntry(void)
 {
  int i;
  int j;
- asm push es;
+
  if( access )
  {
-	asm pop es;
+
 	return -1;
  }
 // Jan 98
@@ -651,7 +680,7 @@ int MSTP_SENDFRAMEPOOL::NextFreeEntry(void)
 	}
 	if ( ++j >= MSTP_NMAXSENDFRAMEPOOL ) j=0;
  }
- asm pop es;
+
  access=0;
  if ( i >= MSTP_NMAXSENDFRAMEPOOL ) return -1;
  return j;
@@ -661,7 +690,7 @@ int MSTP_SENDFRAMEPOOL::NextFreeEntry(void)
 int MSTP_SENDFRAMEPOOL::RemoveEntry(FRAME *frame)
 {
  int i,j;
- asm push es;
+
  j = entry;
  for(i=0; i<MSTP_NMAXSENDFRAMEPOOL; i++)
  {
@@ -670,13 +699,12 @@ int MSTP_SENDFRAMEPOOL::RemoveEntry(FRAME *frame)
  }
  if ( i >= MSTP_NMAXSENDFRAMEPOOL )
  {
-  asm pop es;
 	return -1;
  }
  memcpy( frame, &Frame[j], sizeof(FRAME));
  entry=j;
  status[j]=0;
- asm pop es;
+
  return 1;
 }
 
@@ -785,7 +813,7 @@ int sendinfo(FRAME *frame, int status, int panel, int port )
 {
  class ConnectionData *cdata;
  char *Buffer;
- int i=0, l;
+ int i=0;
  cdata = (class ConnectionData *)Routing_table[port].ptr;
 
 		frame->FrameType = BACnetDataNotExpectingReply;
@@ -914,6 +942,9 @@ void MSTP::sendinfo(FRAME *frame, int status, int panel, int dest )
 
 MSTP::MSTP( int c_port, int n_port ):Serial( c_port, n_port )
 {
+	char* point_adr;
+	uint point_length;
+	
 	Point point;
 //	memset(&need_info, 0, sizeof(need_info));
 	need_info = (1l<<(Station_NUM-1));
@@ -928,7 +959,7 @@ MSTP::MSTP( int c_port, int n_port ):Serial( c_port, n_port )
 	panel_info1.network = comm_info[c_port].NetworkAddress;
 	memcpy(panel_info1.network_name,comm_info[c_port].NetworkName,NAME_SIZE);
 	strcpy(panel_info1.panel_name,Station_NAME);
-	panel_info1.des_length = search_point( point, NULL, NULL, 0, LENGTH );
+	panel_info1.des_length = search_point( point, NULL, point_adr, point_length, LENGTH );
 	station_list[Station_NUM-1].des_length = panel_info1.des_length;
 	panel_info1.panel_number = Station_NUM;
 	panel_info1.version = Version;
@@ -952,8 +983,8 @@ void MSTP::MSTP_Master_initialize(void)
  PS = TS;
  OS = TS;
  TokenCount = NPoll;
- SoleMaster = FALSE;
-// ReceivedValidFrame = ReceivedInvalidFrame = FALSE;
+ SoleMaster = false;
+// ReceivedValidFrame = ReceivedInvalidFrame = false;
 // MSTP_MASTERState = MSTP_MASTER_IDLE;
 // SilenceTimer=0;
  FirstToken=0;
@@ -971,12 +1002,14 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 {
 /* if two RS485 ports installed, no variables on stack
 	 are allowed */
- int mcr;
- struct isr_data_block *isr_data;
- Settings *settings;
+ //int mcr;
+ //struct isr_data_block *isr_data;
+ //Settings *settings;
  FRAME frame;
- char TimeOut, resetport;
- int n,dayofyear, countr, reply_delay;
+ char TimeOut;
+ int resetport;
+ int n,dayofyear, countr;
+ //int reply_delay;
  struct MSTP_ReceivedFrame recframe;
  PORT_STATUS_variables *ps;
  ps = &Routing_table[mstp->port_number].port_status_vars;
@@ -1031,7 +1064,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				 mstp->NS = TS;
 				 mstp->PS = TS;
 				 mstp->OS = TS;
-				 mstp->SoleMaster = FALSE;
+				 mstp->SoleMaster = false;
 				}
 
 				countr--;
@@ -1067,15 +1100,15 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 //       ps->HeartbeatTimer=0;
 			 if(mstp->panelOff) break;
 //        ReceivedInvalidFrame
-			 if( recframe.ReceivedInvalidFrame == TRUE )
+			 if( recframe.ReceivedInvalidFrame == true )
 			 {
-//				ReceivedInvalidFrame = FALSE;
+//				ReceivedInvalidFrame = false;
 				ps->validint = 1;
 				break;
 			 }
-			 if( recframe.ReceivedValidFrame == TRUE )
+			 if( recframe.ReceivedValidFrame == true )
 			 {
-//				ReceivedValidFrame = FALSE;
+//				ReceivedValidFrame = false;
 //          ReceivedUnwantedFrame
 				if( (recframe.Frame.Destination != TS && recframe.Frame.Destination != 255) ||
 					 (recframe.Frame.Destination == 255 && (recframe.Frame.FrameType==Token ||
@@ -1093,7 +1126,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				if( recframe.Frame.Destination == TS && recframe.Frame.FrameType==Token )
 				{
          resetport = 700;
-				 mstp->UsedToken = FALSE;
+				 mstp->UsedToken = false;
 				 if( mstp->receivedtoken == 0 )
 				 {
 						// indicates the panel received the token. It is used in
@@ -1328,12 +1361,12 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				MSTP_MASTER_State = MSTP_MASTER_DONE_WITH_TOKEN;
 				next = 1;
 */
-				if( mstp->TokenCount < NPoll && mstp->SoleMaster==TRUE )
+				if( mstp->TokenCount < NPoll && mstp->SoleMaster==true )
 				{
 //          mstp->SoleMaster
 				mstp->FrameCount = 0;
 				mstp->TokenCount = NPoll;
-				mstp->SoleMaster = FALSE;
+				mstp->SoleMaster = false;
 				ps->SilenceTimer = 0;
 				ps->MSTP_MASTERState = MSTP_MASTER_IDLE;
 				ps->validint = 1;
@@ -1380,7 +1413,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 			 }
 			 break;
 		 case MSTP_MASTER_WAIT_FOR_REPLY:
-				TimeOut=FALSE;
+				TimeOut=false;
 //			  timerunMSTP = Treply_timeout;
 //			  ps->HeartbeatTimer = Treply_timeout;
 //			  msleep(120);
@@ -1388,7 +1421,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 			  msleep(Treply_timeout);
 //			  timerunMSTP=0xffff;
 //			  ps->HeartbeatTimer=0xffff;
-//			  if(mstp->ReceivedFramePool.RemoveEntry(ClientBuffer)<0) TimeOut=TRUE;
+//			  if(mstp->ReceivedFramePool.RemoveEntry(ClientBuffer)<0) TimeOut=true;
 				if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 				{
 				 if( ps->EventCount >= Nmin_octets )
@@ -1405,7 +1438,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 							  msleep(Treply_timeout-ps->SilenceTimer);
 						  if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 						  {
-							 TimeOut=TRUE;
+							 TimeOut=true;
 						  }
 						  else
 						  {
@@ -1413,7 +1446,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 						  }
 						}
 						else
-						 TimeOut=TRUE;
+						 TimeOut=true;
 				  }
 				  else
 				  {
@@ -1424,7 +1457,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				 {
 					mstp->SendFrame(NULL);  //pad same bytes to announce its presents
           msleep(16);        // allow the requested panel to finish processing 
-					TimeOut=TRUE;
+					TimeOut=true;
 					if(NotResponse1)
 						NotResponse = 1;
 				 }
@@ -1445,14 +1478,14 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 			 if( !TimeOut )
 			 {
 //         InvalidFrame
-				if( recframe.ReceivedInvalidFrame == TRUE )
+				if( recframe.ReceivedInvalidFrame == true )
 				{
-//				 ReceivedInvalidFrame = FALSE;
+//				 ReceivedInvalidFrame = false;
 				 ps->MSTP_MASTERState = MSTP_MASTER_DONE_WITH_TOKEN;
 				 break;
 			  }
 //         ReceivedReply
-				if( recframe.ReceivedValidFrame == TRUE &&
+				if( recframe.ReceivedValidFrame == true &&
 					recframe.Frame.Destination == TS &&
 					( recframe.Frame.FrameType==BACnetDataNotExpectingReply ||
 					  recframe.Frame.FrameType==TestResponse)
@@ -1462,28 +1495,28 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 //           indicate successful reception to the higher layer
 				 networklayer( DL_UNITDATAindication, NORMALmessage, 0, recframe.Frame.Destination, recframe.Frame.Source,
 									ClientBuffer, recframe.Frame.Length, NULL, 0, recframe.Frame.FrameType, CLIENT, mstp->port_number);
-//				 ReceivedValidFrame = FALSE;
+//				 ReceivedValidFrame = false;
 				 ps->MSTP_MASTERState = MSTP_MASTER_DONE_WITH_TOKEN;
 				 break;
 				}
 //         ReceivePostpone
-			  if( recframe.ReceivedValidFrame == TRUE &&
+			  if( recframe.ReceivedValidFrame == true &&
 					recframe.Frame.Destination == TS &&
 					recframe.Frame.FrameType==ReplyPostponed )
 				{
-//				 ReceivedValidFrame = FALSE;
+//				 ReceivedValidFrame = false;
 				 ps->MSTP_MASTERState = MSTP_MASTER_DONE_WITH_TOKEN;
 				 break;
 				}
 //         ReceivedUnexpectedFrame
-				if( recframe.ReceivedValidFrame == TRUE &&
+				if( recframe.ReceivedValidFrame == true &&
 					(recframe.Frame.Destination != TS ||
 					 recframe.Frame.FrameType!=BACnetDataNotExpectingReply ||
 						recframe.Frame.FrameType!=TestResponse)
 						// or a proprietary reply frame
 					)
 			  {
-//				 ReceivedValidFrame = FALSE;
+//				 ReceivedValidFrame = false;
 				 ps->MSTP_MASTERState = MSTP_MASTER_IDLE;
 				 ps->validint = 1;
 				 break;
@@ -1500,7 +1533,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 			 if( mstp->FrameCount >= Nmax_info_frames)
 			 {
 //         mstp->SoleMaster
-				if( mstp->TokenCount < NPoll && mstp->SoleMaster==TRUE )
+				if( mstp->TokenCount < NPoll && mstp->SoleMaster==true )
 				{
 				mstp->FrameCount = 0;
 				mstp->TokenCount++;
@@ -1509,13 +1542,13 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				}
 //         SendToken
 				ps->validint = 1;
-				if( (mstp->TokenCount < NPoll && mstp->SoleMaster==FALSE) ||
+				if( (mstp->TokenCount < NPoll && mstp->SoleMaster==false) ||
 					 ( mstp->NS==(TS+1)%(Nmax_master+1) ) )
 				{
 //				if ( timebetweentoken < 25 )
 				if ( ps->InactivityTimer < 21 )
 				{
-				 if( mstp->UsedToken == FALSE )
+				 if( mstp->UsedToken == false )
 					mstp->SendFrame(NULL);  //pad same bytes to announce its presents
 //				 timerunMSTP = 31 - timebetweentoken;
 //				 ps->HeartbeatTimer = 31 - timebetweentoken;
@@ -1573,7 +1606,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				ps->InactivityTimer = 0;
 				if( ps->EventCount < Nmin_octets )
 					msleep(Tusage_timeout);
-				TimeOut=TRUE;
+				TimeOut=true;
 //        SawTokenUser
 //			 if( SilenceTimer < Tusage_timeout && EventCount > Nmin_octets )
 			 ps->validint = 1;
@@ -1695,7 +1728,7 @@ if (mode_text)
 			 }
 			 break;
 		 case MSTP_MASTER_POLL_FOR_MASTER:
-			 TimeOut=FALSE;
+			 TimeOut=false;
 //			  timerunMSTP=Tusage_timeout;
 //			  ps->HeartbeatTimer=Tusage_timeout;
 //			  msleep(100);
@@ -1711,16 +1744,16 @@ if (mode_text)
 				 {
 					msleep(Tusage_timeout);
 					if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
-						 TimeOut=TRUE;
+						 TimeOut=true;
 				 }
-				 else TimeOut=TRUE;
+				 else TimeOut=true;
 				}
        }
 			 ps->validint = 1;
 			 if( !TimeOut )
 			 {
 //         ReceivedReplyToPFM
-			  if( recframe.ReceivedValidFrame == TRUE &&
+			  if( recframe.ReceivedValidFrame == true &&
 					recframe.Frame.Destination == TS &&
 					recframe.Frame.FrameType==ReplyToPollForMaster )
 			  {
@@ -1733,38 +1766,38 @@ if (mode_text)
 				 mstp->SendFrame(&frame);  // Token to NS
 				 mstp->PS = TS;
 				 mstp->RetryCount = mstp->TokenCount = 0;
-//				ReceivedValidFrame = FALSE;
+//				ReceivedValidFrame = false;
 				 ps->MSTP_MASTERState = MSTP_MASTER_PASS_TOKEN;
 //				 if(!iamnewonnet)
 //					 newpanelon = mstp->NS;
 				 break;
 				}
 //         ReceivedUnexpectedFrame
-				if( recframe.ReceivedValidFrame == TRUE &&
+				if( recframe.ReceivedValidFrame == true &&
 					(recframe.Frame.Destination != TS ||
 					 recframe.Frame.FrameType!=ReplyToPollForMaster) )
 				{
-//				ReceivedValidFrame = FALSE;
+//				ReceivedValidFrame = false;
 				ps->MSTP_MASTERState = MSTP_MASTER_IDLE;
 				break;
 			  }
 			 }
 //        SoleMaster
-			 if(mstp->SoleMaster == TRUE &&
+			 if(mstp->SoleMaster == true &&
 //				  (ps->SilenceTimer>Tusage_timeout ||
 					( TimeOut ||
-					recframe.ReceivedInvalidFrame==TRUE) )
+					recframe.ReceivedInvalidFrame==true) )
 			 {
 				mstp->FrameCount=0;
-//				ReceivedInvalidFrame = FALSE;
+//				ReceivedInvalidFrame = false;
 				ps->MSTP_MASTERState = MSTP_MASTER_USE_TOKEN;
 				break;
 			 }
 //        DoneWithPFM
-			 if(mstp->SoleMaster == FALSE && mstp->NS!=TS &&
+			 if(mstp->SoleMaster == false && mstp->NS!=TS &&
 //				  (ps->SilenceTimer>Tusage_timeout ||
 				  ( TimeOut ||
-					recframe.ReceivedInvalidFrame==TRUE) )
+					recframe.ReceivedInvalidFrame==true) )
 			 {
 				ps->EventCount=0;
 				frame.FrameType = Token;
@@ -1773,15 +1806,15 @@ if (mode_text)
 				frame.Length = 0;
 				mstp->SendFrame(&frame);  // Token to NS
 				mstp->RetryCount=0;
-//				ReceivedInvalidFrame = FALSE;
+//				ReceivedInvalidFrame = false;
 				ps->MSTP_MASTERState = MSTP_MASTER_PASS_TOKEN;
 				break;
 			 }
 //        SendNextPFM
-			 if(mstp->SoleMaster == FALSE && mstp->NS==TS && TS!=(mstp->PS+1)%(Nmax_master+1) &&
+			 if(mstp->SoleMaster == false && mstp->NS==TS && TS!=(mstp->PS+1)%(Nmax_master+1) &&
 //				  (ps->SilenceTimer>Tusage_timeout ||
 				  ( TimeOut ||
-					 recframe.ReceivedInvalidFrame==TRUE) )
+					 recframe.ReceivedInvalidFrame==true) )
 			 {
 				mstp->PS=(mstp->PS+1)%(Nmax_master+1);
 				frame.FrameType = PollForMaster;
@@ -1791,18 +1824,18 @@ if (mode_text)
         ps->EventCount = 0;     //Add Dec 1997
 				mstp->SendFrame(&frame);  // PollForMaster to PS
 				mstp->RetryCount=0;
-//				ReceivedInvalidFrame = FALSE;
+//				ReceivedInvalidFrame = false;
 				break;
 			 }
 //        DeclareSoleMaster
-			 if(mstp->SoleMaster == FALSE && mstp->NS==TS && TS==(mstp->PS+1)%(Nmax_master+1) &&
+			 if(mstp->SoleMaster == false && mstp->NS==TS && TS==(mstp->PS+1)%(Nmax_master+1) &&
 //				  (ps->SilenceTimer>Tusage_timeout ||
 				  ( TimeOut ||
-					 recframe.ReceivedInvalidFrame==TRUE) )
+					 recframe.ReceivedInvalidFrame==true) )
 			 {
-				mstp->SoleMaster = TRUE;
+				mstp->SoleMaster = true;
 				mstp->FrameCount=0;
-//				ReceivedInvalidFrame = FALSE;
+//				ReceivedInvalidFrame = false;
 				ps->MSTP_MASTERState = MSTP_MASTER_USE_TOKEN;
 				ready_for_descriptors = 0;
 				mstp->panelconnected=2;
@@ -1873,7 +1906,7 @@ int clientprocedure( char command, int bank, char *asdu, char **data, int lmax, 
  unsigned int l;
  int str_new_size;
  char *ptr;
- byte no_points;
+ //byte no_points;
  Bank_Type tbank;
  tbank = *((Bank_Type *)&bank);
  if(command > 100)
@@ -1996,16 +2029,20 @@ int ClientTransactionStateMachine(
 			 char bytearg=0, int task = -1, int port = -1, int others = 0
 			)
 {
- char apci[MAXAPCI], asdu[MAXAPDUSIZE], *ptr, laststate;
+ char apci[MAXAPCI], asdu[MAXAPDUSIZE], laststate;
+ //char *ptr, maxresp;
  char next, win_size, retry=0, compressed=0, invokeid;
- char PDUtype, seg, mor, sa, maxresp, nosequence, windowsize, srv;
+ char PDUtype, seg, mor, nosequence, windowsize, srv;
+ unsigned char sa;
  int	cmd,current, error, service, length_apci = 4;
- long l;
+ //long l;
  unsigned int n;
  unsigned int length, length_asdu, last_length, data_length_pack;
  struct CTSMTable *ptable;
 
+#ifdef BAS_TEMP
  GWindow *D=NULL;
+#endif //BAS_TEMP
 
  length_asdu = 0;
  length = *data_length;
@@ -2099,14 +2136,14 @@ int ClientTransactionStateMachine(
 /*         if(APDU > max_APDU_length_supported)
 				{
 				 send Conf_Req PDU with
-						segmented_msg = TRUE
-						more_follows = TRUE
+						segmented_msg = true
+						more_follows = true
 				 CTSM_State=CTSM_SEGMENTING_REQUEST;
 				}
 				if(APDU <= max_APDU_length_supported)
 				{
 				 send Conf_Req PDU with
-						segmented_msg = FALSE
+						segmented_msg = false
 				 CTSM_State=CTSM_AWAIT_CONFIRMATION;
 				}
 */
@@ -2224,19 +2261,19 @@ int ClientTransactionStateMachine(
 	 case CTSM_SEGMENTING_REQUEST:
 	 {
 /*
-			if (Event == SEGMENT_ACK.indication // with server==TRUE)
+			if (Event == SEGMENT_ACK.indication // with server==true)
 			{
 			 if (not final APDU segment)
 			 {
 				send Conf_Req PDU with
-						segmented_msg = TRUE
-						more_follows = TRUE
+						segmented_msg = true
+						more_follows = true
 			 }
 			 if (final APDU segment)
 			 {
 				send Conf_Req PDU with
-					  segmented_msg = TRUE
-						more_follows = FALSE
+					  segmented_msg = true
+						more_follows = false
 			 }
 			 if (no more APDU segments)
 			 {
@@ -2380,7 +2417,7 @@ mxyputs(20,20,xxxx,Black,White);
 			}
 			if( error == RS232_ERROR || (error == USER_ABORT || error == RS232_REJECT) || retry >=1 )
 			{
-			 apci[0] = (BACnetAbortPDU<<4);   //server=FALSE
+			 apci[0] = (BACnetAbortPDU<<4);   //server=false
 			 apci[1] = invokeID;
 			 apci[2] = 0;           //other reasons
 			 length_apci = 3;
@@ -2389,7 +2426,7 @@ mxyputs(20,20,xxxx,Black,White);
 			 next=0;
 			 if( error == RS232_ERROR )
 				if(NotResponse && laststate == CTSM_IDLE)
-				 delay(2000);
+				 sleep(2); //delay(2000);
 			 break;
 			}
 /*
@@ -2457,7 +2494,7 @@ mxyputs(20,20,xxxx,Black,White);
 			 break;
 			}
 /*
-			if (Event == ABORT.indication with server==TRUE)
+			if (Event == ABORT.indication with server==true)
 			{
 			send ABORT.indication
 				CTSM_State=CTSM_IDLE;
@@ -2473,7 +2510,7 @@ mxyputs(20,20,xxxx,Black,White);
 			}
 /*			if (unexpected PDU from server)
 			{
-			send Abort PDU with server = FALSE
+			send Abort PDU with server = false
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
@@ -2493,7 +2530,7 @@ mxyputs(20,20,xxxx,Black,White);
 		 }
 			if (Event == ABORT.request)
 			{
-			send Abort PDU with server = FALSE
+			send Abort PDU with server = false
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
@@ -2551,7 +2588,7 @@ mxyputs(20,20,xxxx,Black,White);
 /*
 			if (Event == ABORT.request)
 			{
-//         send Abort PDU with server = FALSE
+//         send Abort PDU with server = false
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
@@ -2561,7 +2598,7 @@ mxyputs(20,20,xxxx,Black,White);
 				next=0;
 				break;
 			 }
-			 apci[0] = (BACnetAbortPDU<<4);   //server=FALSE
+			 apci[0] = (BACnetAbortPDU<<4);   //server=false
 			 apci[1] = invokeID;
 			 apci[2] = 0;           //other reasons
 			 length_apci = 3;
@@ -2578,23 +2615,23 @@ mxyputs(20,20,xxxx,Black,White);
 				next=0;
 				break;
 			}
-/*			if (Event == Complex_ACK PDU with segmented_msg = FALSE)
+/*			if (Event == Complex_ACK PDU with segmented_msg = false)
 			{
 				send CONF_SERV.cnf(+)
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
-			if (CTSM_Event == Complex_ACK PDU with segmented_msg = TRUE
-																more_follows = TRUE )
+			if (CTSM_Event == Complex_ACK PDU with segmented_msg = true
+																more_follows = true )
 			{
 				if(segmentation is to be done by AE)
 				{
-				 send SegmentACK PDU with server = FALSE
+				 send SegmentACK PDU with server = false
 				 CTSM_State=CTSM_AE_SEGMENTED_CONFIRMATION;
 				}
 				if(segmentation is to be done by AP)
 				{
-				 send CONF_SERV.cnf(+) with more_follows = TRUE
+				 send CONF_SERV.cnf(+) with more_follows = true
 				 CTSM_State=CTSM_AP_SEGMENTED_CONFIRMATION;
 				}
 			}
@@ -2641,13 +2678,13 @@ mxyputs(20,20,xxxx,Black,White);
 				{
 				sa += n;
 				sa += decodetag(&apci[sa], (unsigned *)&last_length);   //asdu length
-				if(seg==TRUE && mor==TRUE)  // segmented_msg = TRUE and
-													// more_follows = TRUE
+				if(seg==true && mor==true)  // segmented_msg = true and
+													// more_follows = true
 				{
 /*
 				if(segmentation is to be done by AE)
 				{
-				 send SegmentACK PDU with server = FALSE
+				 send SegmentACK PDU with server = false
 				 CTSM_State=CTSM_AE_SEGMENTED_CONFIRMATION;
 				}
 */
@@ -2704,7 +2741,7 @@ mxyputs(20,20,xxxx,Black,White);
 /*
 				if(segmentation is to be done by AP)
 				{
-				 send CONF_SERV.cnf(+) with more_follows = TRUE
+				 send CONF_SERV.cnf(+) with more_follows = true
 				 CTSM_State=CTSM_AP_SEGMENTED_CONFIRMATION;
 				}
 */
@@ -2768,7 +2805,7 @@ mxyputs(20,20,xxxx,Black,White);
 			}
 */
 /*
-			if (CTSM_Event == RejectPDU with server=TRUE)
+			if (CTSM_Event == RejectPDU with server=true)
 			{
 				send REJECT.indication
 				CTSM_State=CTSM_IDLE;
@@ -2776,7 +2813,7 @@ mxyputs(20,20,xxxx,Black,White);
 			}
 */
 /*
-			if (CTSM_Event == AbortPDU with server=TRUE)
+			if (CTSM_Event == AbortPDU with server=true)
 			{
 			  send ABORT.indication
 			  CTSM_State=CTSM_IDLE;
@@ -2792,7 +2829,7 @@ mxyputs(20,20,xxxx,Black,White);
 /*
 			if (CTSM_Event == Unexpected PDU from server)
 			{
-				send AbortPDU with server=FALSE
+				send AbortPDU with server=false
 			  CTSM_State=CTSM_IDLE;
 			  next=0;
 			}
@@ -2804,15 +2841,15 @@ mxyputs(20,20,xxxx,Black,White);
 				APDU > max_APDU_length_supported)
 			{
 				 send Conf_Req PDU with
-					  segmented_msg = TRUE
-						more_follows = TRUE
+					  segmented_msg = true
+						more_follows = true
 				 CTSM_State=CTSM_SEGMENTING_REQUEST;
 			  }
 			if(retry count not exceed and
 				APDU <= max_APDU_length_supported)
 			{
 				 send Conf_Req PDU with
-					  segmented_msg = FALSE
+					  segmented_msg = false
 			  }
 			if(retry count exceeded)
 			{
@@ -2825,7 +2862,7 @@ mxyputs(20,20,xxxx,Black,White);
 /*
 			if (Event == ABORT.request)
 			{
-//         send Abort PDU with server = FALSE
+//         send Abort PDU with server = false
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
@@ -2870,7 +2907,7 @@ mxyputs(20,20,xxxx,Black,White);
 			}
 			if(error!=SUCCESS)		//timeout
 			{
-			 apci[0] = (BACnetAbortPDU<<4);   //server=FALSE
+			 apci[0] = (BACnetAbortPDU<<4);   //server=false
 			 apci[1] = invokeID;
 			 apci[2] = 0;           //other reasons
 			 length_apci = 3;
@@ -2881,22 +2918,22 @@ mxyputs(20,20,xxxx,Black,White);
 			 break;
 			}
 /*
-			if (CTSM_Event == Complex_ACK PDU with segmented_msg = TRUE
-																more_follows = TRUE )
+			if (CTSM_Event == Complex_ACK PDU with segmented_msg = true
+																more_follows = true )
 			{
-				 send SegmentACK PDU with server = FALSE
+				 send SegmentACK PDU with server = false
 				 if(buffer full or other reasons)
 				 {
-					send Abort PDU with server=FALSE
+					send Abort PDU with server=false
 					send CONF_SERV.cnf(-)
 					CTSM_State=CTSM_IDLE;
 					next=0;
 				 }
 			}
-			if (CTSM_Event == Complex_ACK PDU with segmented_msg = TRUE
-																more_follows = FALSE )
+			if (CTSM_Event == Complex_ACK PDU with segmented_msg = true
+																more_follows = false )
 			{
-				send SegmentACK PDU with server = FALSE
+				send SegmentACK PDU with server = false
 				send CONF_SERV.cnf(+)
 				CTSM_State=CTSM_IDLE;
 				next=0;
@@ -2988,7 +3025,7 @@ mxyputs(20,20,xxxx,Black,White);
 
 					 if(ptable->others&NETCALL_SIGN) communication_sign(data_const+(*data_length),data_length_const?data_length_const:data_length_pack);
 					}
-					if( seg==TRUE )
+					if( seg==true )
 					{
 					 ptable->state = 0;
 					 if( ++win_size >= windowsize )
@@ -3005,14 +3042,14 @@ mxyputs(20,20,xxxx,Black,White);
 // Added February 14, for router reason, to detect if the
 // request is NotExpected reply
 						apci[9] =  BACnetDataExpectingReply;
-						if( mor==FALSE )
+						if( mor==false )
 							apci[9] = BACnetDataNotExpectingReply;
 						length_apci = 10;
-						networklayer( N_UNITDATArequest, NORMALmessage, network, destination, source, NULL, 0, apci, length_apci, mor==TRUE?BACnetDataExpectingReply:BACnetDataNotExpectingReply);
+						networklayer( N_UNITDATArequest, NORMALmessage, network, destination, source, NULL, 0, apci, length_apci, mor==true?BACnetDataExpectingReply:BACnetDataNotExpectingReply);
 						win_size = 0;
 					 }
 					}
-					if(mor==FALSE)
+					if(mor==false)
 					{
 					 ptable->CTSM_State=CTSM_IDLE;
 					 next=0;
@@ -3048,7 +3085,7 @@ mxyputs(20,20,xxxx,Black,White);
 			 break;
 			}
 /*
-			if (CTSM_Event == AbortPDU with server==TRUE)
+			if (CTSM_Event == AbortPDU with server==true)
 			{
 //         send ABORT.indication
 				CTSM_State=CTSM_IDLE;
@@ -3056,7 +3093,7 @@ mxyputs(20,20,xxxx,Black,White);
 			}
 			if (unexpected PDU from server)
 			{
-//         send Abort PDU with server = FALSE
+//         send Abort PDU with server = false
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
@@ -3068,7 +3105,7 @@ mxyputs(20,20,xxxx,Black,White);
 //       }
 			if (Event == ABORT.request)
 			{
-//         send Abort PDU with server = FALSE
+//         send Abort PDU with server = false
 				CTSM_State=CTSM_IDLE;
 				next=0;
 			}
@@ -3087,7 +3124,7 @@ mxyputs(20,20,xxxx,Black,White);
 }
 
 //char xxxx[10],gg=22;
-int buildservice(char *asdu, unsigned *length_asdu, int entryServerTSMTable)
+void buildservice(char *asdu, unsigned *length_asdu, int entryServerTSMTable)
 {
  struct TSMTable *ptrtable;
  int l;
@@ -3111,10 +3148,10 @@ int buildservice(char *asdu, unsigned *length_asdu, int entryServerTSMTable)
  ptrtable->length -= l;
 }
 
-int execservice(char *asdu, unsigned *length_asdu, int entryServerTSMTable)
+void execservice(char *asdu, unsigned *length_asdu, int entryServerTSMTable)
 {
  struct TSMTable *ptrtable;
- unsigned int l;
+ //unsigned int l;
  ptrtable = &ServerTSMTable.table[entryServerTSMTable];
  memcpy(ptrtable->data,asdu,*length_asdu);
  ptrtable->data += *length_asdu;
@@ -3190,7 +3227,7 @@ int serverBACnet(int port, ServicePrimitive event, char service, char *asdu, int
 int serverprocedure( int port, ServicePrimitive event, char *asdu, int length_asdu, int entryServerTSMTable, int *ind=NULL, int destport=-1)
 {
  byte comm_code, ex_high;
- unsigned int bank, n, ret, i, j;
+ unsigned int bank, n, ret, i, j, k;
  char res,*ptr, extralow, extrahigh, comm_type;
 // unsigned int length;
  long t;
@@ -3324,14 +3361,14 @@ int serverprocedure( int port, ServicePrimitive event, char *asdu, int length_as
 					if( extrahigh&0x10 )
 					{
 					memcpy(&n, asdu, 2);
-//***					if(!station_list[n-1].state)
+//					if(!station_list[n-1].state)
 					if(!cdata->station_list[n-1].state)
 					{
-//***					  station_list[n-1].state = 1;
+//					  station_list[n-1].state = 1;
 						cdata->station_list[n-1].state = 1;
 						cdata->panel_info1.active_panels |= (1<<(n-1));
 					}
-//***					strcpy( station_list[n-1].name, &asdu[2] );
+//					strcpy( station_list[n-1].name, &asdu[2] );
 					strcpy( cdata->station_list[n-1].name, &asdu[2] );
 					}
 					else
@@ -3608,7 +3645,7 @@ if (mode_text)
 							}
 						 if( rs485port!=-1 && ipxport!=-1 )
 						 {
-							 for(int k=0; k<MAXNETWORKPOINTS; k++)
+							 for(k=0; k<MAXNETWORKPOINTS; k++)
 							 {
 								if( networkpoints->info.point==response_router_points_list[k].info.point ) break;
 							 }
@@ -3736,7 +3773,7 @@ if(entrytimeout<0)
 			 STSM_NoSeq    = apdu[2];
 			 STSM_WinSize  = apdu[3];
 			 n=4;
-			 if( STSM_SRV == TRUE )
+			 if( STSM_SRV == true )
 			 {
 //			  LengthReceivedClientAPDU = length_apdu;
 //				PTRReceivedClientAPDU = apdu;
@@ -3864,7 +3901,7 @@ xxxx++;
 			 break;
 			}
 /*
-			if (STSM_Event == Conf_ReqPDU && with segmented_msg=FALSE)
+			if (STSM_Event == Conf_ReqPDU && with segmented_msg=false)
 			{
 				send CONF_SERV.indication
 				STSM_State=STSM_AWAIT_RESPONSE;
@@ -3882,7 +3919,7 @@ xxxx++;
 			  break;
 			}
 */
-			if (STSM_Event == BACnetConfirmedRequestPDU && STSM_SEG == FALSE)
+			if (STSM_Event == BACnetConfirmedRequestPDU && STSM_SEG == false)
 			{
 			 if( STSM_Service==ConfirmedPrivateTransfer )
 			 {
@@ -3957,21 +3994,21 @@ xxxx++;
 			 }
 			}
 /*
-			if (Event == Conf_req PDU with segmented_msg=TRUE
-			{                              more_follows=TRUE)
+			if (Event == Conf_req PDU with segmented_msg=true
+			{                              more_follows=true)
 				if(able to accept segment)
 				{
-				send SegmentACK PDU with server=TRUE
+				send SegmentACK PDU with server=true
 				STSM_State=STSM_SEGMENTED_REQUEST;
 				}
 				if(not able to accept segment)
 				{
-				send Abort PDU with server=TRUE
+				send Abort PDU with server=true
 				STSM_State=STSM_IDLE;
 				}
 			}
 */
-			if (STSM_Event == BACnetConfirmedRequestPDU && STSM_SEG == TRUE && STSM_MOR==TRUE)
+			if (STSM_Event == BACnetConfirmedRequestPDU && STSM_SEG == true && STSM_MOR==true)
 			{
 				PTRtable->windowsize=STSM_WinSize;
 				STSM_Event = serverprocedure( port, CONF_SERVindication, asdu, length_asdu, current, &n, destport);
@@ -4023,7 +4060,7 @@ xxxx++;
 /*
 			if (Event == SegmentACK PDU)
 			{
-				send Abort PDU with server=TRUE
+				send Abort PDU with server=true
 				STSM_State=STSM_IDLE;
 				next=0;
 			}
@@ -4042,23 +4079,23 @@ xxxx++;
 			next=0;
 			break;
 	 case STSM_SEGMENTING_REQUEST:
-/*			if (Event == Conf_req PDU with segmented_msg=TRUE
-			{                              more_follows=TRUE)
+/*			if (Event == Conf_req PDU with segmented_msg=true
+			{                              more_follows=true)
 			  if(able to accept segment)
 			  {
-				send SegmentACK PDU with server=TRUE
+				send SegmentACK PDU with server=true
 			  }
 			  if(not able to accept segment)
 			  {
-				send Abort PDU with server=TRUE
+				send Abort PDU with server=true
 				STSM_State=STSM_IDLE;
 			  }
 			}
 */
 /*
-			if (Event == Conf_req PDU with segmented_msg=TRUE
-			{                              more_follows=FALSE)
-				send SegmentACK PDU with server=TRUE
+			if (Event == Conf_req PDU with segmented_msg=true
+			{                              more_follows=false)
+				send SegmentACK PDU with server=true
 				send CONF_SERV.indication
 				STSM_State=STSM_IDLE;
 			}
@@ -4086,7 +4123,7 @@ xxxx++;
 			 next = 0;
 			 break;
 			}
-			if (STSM_Event == BACnetConfirmedRequestPDU && STSM_SEG == TRUE)
+			if (STSM_Event == BACnetConfirmedRequestPDU && STSM_SEG == true)
 			{
 //				if( STSM_NoSeq < PTRtable->noseq-(PTRtable->nosegment?PTRtable->nosegment-1:PTRtable->windowsize-1) || STSM_NoSeq > PTRtable->noseq+1)
 				if( STSM_NoSeq < PTRtable->noseq || STSM_NoSeq > PTRtable->noseq+1)
@@ -4134,7 +4171,7 @@ xxxx++;
 				 length_asdu -= n;
         }
 				execservice(asdu, &length_asdu, current);
-				if(STSM_MOR==TRUE)
+				if(STSM_MOR==true)
 				{
 				 if(++PTRtable->noseg >= PTRtable->windowsize)
 				 {
@@ -4168,7 +4205,7 @@ xxxx++;
 /*
 			if (unexpected PDU from client)
 			{
-//         send Abort PDU with server = TRUE
+//         send Abort PDU with server = true
 			  STSM_State=STSM_IDLE;
 			  next=0;
 			}
@@ -4181,14 +4218,14 @@ xxxx++;
 				{
 				 send Simple_ACK PDU or
 				 send Complex_ACK PDU with
-						segmented_msg = FALSE
+						segmented_msg = false
 				 STSM_State=STSM_IDLE;
 				}
 				if(APDU > max_APDU_length_supported)
 				{
 				 send Complex_ACK PDU with
-						segmented_msg = TRUE
-						more_follows = TRUE
+						segmented_msg = true
+						more_follows = true
 				 STSM_State=STSM_SEGMENTING_RESPONSE;
 				}
 */
@@ -4285,7 +4322,7 @@ xxxx++;
 				 if(PTRtable->length)
 				 {
 					STSM_Event = BACnetSegmentACKPDU;
-					STSM_SRV=FALSE;
+					STSM_SRV=false;
 					PTRtable->timeout = 210;
 					PTRtable->retrycount = 0;
 //					PTRtable->last_length = 0;
@@ -4380,14 +4417,14 @@ xxxx++;
 /*
 			if (unexpected PDU from client)
 			{
-//         send Abort PDU with server = TRUE
+//         send Abort PDU with server = true
 			  STSM_State=STSM_IDLE;
 			}
 */
 /*
 			if (timeout waiting for PDU)
 			{
-			  send Abort PDU with server = TRUE
+			  send Abort PDU with server = true
 			  STSM_State=STSM_IDLE;
 			}
 */
@@ -4491,19 +4528,19 @@ if(xxxx++==2)
 */
 			}
 /*
-			if (Event == SegmentACKPDU with server=FALSE)
+			if (Event == SegmentACKPDU with server=false)
 			{
 			 if (not final APDU segment)
 			 {
 				send ComplexACK PDU with
-					  segmented_msg = TRUE
-					  more_follows = TRUE
+					  segmented_msg = true
+					  more_follows = true
 			 }
 			 if (final APDU segment)
 			 {
 				send ComplexACK PDU with
-					  segmented_msg = TRUE
-					  more_follows = FALSE
+					  segmented_msg = true
+					  more_follows = false
 			 }
 			 if (no more APDU segments)
 			 {
@@ -4517,7 +4554,7 @@ if(xxxx++==2)
 			 next=0; break;
 			}
 /*
-			if( Abort PDU with server = FALSE)
+			if( Abort PDU with server = false)
 			{
 				 send ABORT.indication
 //			    STSM_State=STSM_IDLE;
@@ -4532,7 +4569,7 @@ if(xxxx++==2)
 				 next = 0;
 				 break;
 			}
-			if (STSM_Event == BACnetSegmentACKPDU && STSM_SRV==FALSE)
+			if (STSM_Event == BACnetSegmentACKPDU && STSM_SRV==false)
 			{
 			 if(PTRtable->noseg==0)	PTRtable->last_length = 0;
 			 while( ++PTRtable->noseg <= PTRtable->windowsize && STSM_State==STSM_SEGMENTING_RESPONSE)
@@ -4574,7 +4611,7 @@ if(xxxx++==2)
 /*
 			if (unexpected PDU from client)
 			{
-//         send Abort PDU with server = TRUE
+//         send Abort PDU with server = true
 			  STSM_State=STSM_IDLE;
 			  next=0;
 			}
@@ -4626,10 +4663,10 @@ int rs485_receive_frame()
 	while(MSTP_ReceiveFrameStatus != MSTP_IDLE)
 	{
 	 next=0;
-	 if( SilenceTimer > Tframe_abort || ReceiveError==TRUE)
+	 if( SilenceTimer > Tframe_abort || ReceiveError==true)
 	 {
-		 if( ReceiveError==TRUE ) ReceiveError=FALSE;
-		 pframe->ReceivedInvalidFrame = TRUE;
+		 if( ReceiveError==true ) ReceiveError=false;
+		 pframe->ReceivedInvalidFrame = true;
 		 SilenceTimer=0;
 //		 MSTP_Preamble1=MSTP_Preamble2=0;
 //		 MSTP_Receive_Frame_Status = MSTP_IDLE;
@@ -4674,12 +4711,12 @@ int rs485_receive_frame()
 						case MSTP_HEADER_HeaderCRC:
 							  if( MSTP_HeaderCRC != 0x55 )
 							  {
-								 pframe->ReceivedInvalidFrame = TRUE;
+								 pframe->ReceivedInvalidFrame = true;
 							  }
 							  else
 								if(!pframe->Frame.Length)
 								{
-								 pframe->ReceivedValidFrame = TRUE;
+								 pframe->ReceivedValidFrame = true;
 								}
 								else
 								{
@@ -4707,9 +4744,9 @@ int rs485_receive_frame()
 				 if( index++ == pframe->Frame.Length+1 )
 				 {
 				  if( MSTP_DataCRC==0x0f0b8 )
-					 pframe->ReceivedValidFrame = TRUE;
+					 pframe->ReceivedValidFrame = true;
 				  else
-					 pframe->ReceivedInvalidFrame = TRUE;
+					 pframe->ReceivedInvalidFrame = true;
 //				  MSTP_Preamble1=MSTP_Preamble2=0;
 //				  MSTP_Receive_Frame_Status = MSTP_IDLE;
 				  next=1;
@@ -4728,7 +4765,7 @@ int rs485_receive_frame()
 //  c=ser_rs485->port->Read(0);
   c=ser_rs485->port->read_byte();
 	MSTP_Preamble1=MSTP_Preamble2=0;
-  if(ReceiveError==FALSE && SilenceTimer<Tframe_abort)
+  if(ReceiveError==false && SilenceTimer<Tframe_abort)
   {
 	  if(c==0xFF)
 		 c=ser_rs485->port->read_byte();
@@ -4759,7 +4796,7 @@ int rs485_receive_frame()
 		}
 	  }
   }
-//  ReceiveError=FALSE;
+//  ReceiveError=false;
 //  SilenceTimer=0;
   ser_rs485->port->FlushRXBuffer();
   MSTP_ReceiveFrameStatus = MSTP_IDLE;
@@ -4790,10 +4827,10 @@ int MSTP::MSTP_receive_frame(MSTP *mstp)
 	while(ps->ReceiveFrameStatus != RECEIVE_FRAME_IDLE)
 	{
 	 next=0;
-	 if( ps->SilenceTimer > Tframe_abort || ps->ReceiveError==TRUE)
+	 if( ps->SilenceTimer > Tframe_abort || ps->ReceiveError==true)
 	 {
-		 if( ps->ReceiveError==TRUE ) ps->ReceiveError=FALSE;
-		 pframe->ReceivedInvalidFrame = TRUE;
+		 if( ps->ReceiveError==true ) ps->ReceiveError=false;
+		 pframe->ReceivedInvalidFrame = true;
 		 ps->SilenceTimer=0;
 		 break;
 	 }
@@ -4834,12 +4871,12 @@ int MSTP::MSTP_receive_frame(MSTP *mstp)
 						case HEADER_HeaderCRC:
 							  if( ps->HeaderCRC != 0x55 )
 							  {
-								 pframe->ReceivedInvalidFrame = TRUE;
+								 pframe->ReceivedInvalidFrame = true;
 							  }
 							  else
 								if(!pframe->Frame.Length)
 								{
-								 pframe->ReceivedValidFrame = TRUE;
+								 pframe->ReceivedValidFrame = true;
 								}
 								else
 								{
@@ -4862,9 +4899,9 @@ int MSTP::MSTP_receive_frame(MSTP *mstp)
 				 if( index++ == pframe->Frame.Length+1 )
 				 {
 				  if( ps->DataCRC==0x0f0b8 )
-					 pframe->ReceivedValidFrame = TRUE;
+					 pframe->ReceivedValidFrame = true;
 				  else
-					 pframe->ReceivedInvalidFrame = TRUE;
+					 pframe->ReceivedInvalidFrame = true;
 				  next=1;
 				 }
 				}
@@ -5054,7 +5091,7 @@ void MSTP::SendFrame(FRAME *frame, char wait)
 //  I can disable now the transmiter line driver)
 
 // disable the transmit line driver
-	UsedToken = TRUE;
+	UsedToken = true;
  }
 }
 
@@ -5752,6 +5789,3 @@ int uncompress(char *dest, int length_dest, char *source, int length_source)
  return l;
 */
 }
-
-
-#endif //BAS_TEMP

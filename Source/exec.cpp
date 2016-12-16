@@ -1,9 +1,6 @@
-#if defined(SERIAL_COMM) || defined(NETWORK)
+#define SERIAL_COMM
 
-#include <windows.h>
-#include <graphics.h>
-#include <dos.h>
-#include <dir.h>
+#if defined(SERIAL_COMM) || defined(NETWORK)
 #include <string.h>
 //#include "netbios.h"
 #include "baseclas.h"

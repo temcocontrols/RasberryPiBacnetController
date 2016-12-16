@@ -489,69 +489,73 @@ ClientTSMTable::ClientTSMTable(void)
 
 int ClientTSMTable::newentry(int task, int n, int d, int s, int id)
 {
- int i;
- set_semaphore(&client_entry);
- for(i=0; i<MAXClientTSMTable; i++)
- {
-	if(table[i].state == CTSM_ILLEGAL) break;
- }
- if (i<MAXClientTSMTable)
- {
-	table[i].state                   = 0;
-	table[i].task                    = task;
-	table[i].network                 = n;
-	table[i].destination             = d;
-	table[i].source                  = s;
-	table[i].invokeID                = id;
-	table[i].LengthReceivedClientAPDU=0;
-	table[i].CTSM_State              = CTSM_IDLE;
-// table[i].noseq = 1;
-// table[i].noseg = 0;
-// table[i].length = 0;
-// table[i].last_length = 0;
-// table[i].windowsize  = WINDOWSIZE;
-// table[i].compressed = 0;
-// table[i].retrycount = 0;
- }
- else
-	i=-1;
- clear_semaphore(&client_entry);
- return i;
+	int i;
+	
+	set_semaphore(&client_entry);
+	
+	for(i=0; i<MAXClientTSMTable; i++)
+	{
+		if(table[i].state == CTSM_ILLEGAL) break;
+	}
+	
+	if (i<MAXClientTSMTable)
+	{
+		table[i].state                   = 0;
+		table[i].task                    = task;
+		table[i].network                 = n;
+		table[i].destination             = d;
+		table[i].source                  = s;
+		table[i].invokeID                = id;
+		table[i].LengthReceivedClientAPDU=0;
+		table[i].CTSM_State              = CTSM_IDLE;
+		// table[i].noseq = 1;
+		// table[i].noseg = 0;
+		// table[i].length = 0;
+		// table[i].last_length = 0;
+		// table[i].windowsize  = WINDOWSIZE;
+		// table[i].compressed = 0;
+		// table[i].retrycount = 0;
+	}
+	else
+		i=-1;
+	
+	clear_semaphore(&client_entry);
+	return i;
 }
 
 void ClientTSMTable::received(int s, int d, char *data, unsigned length)
 {
-	 int j;
-	 for(j=0; j<MAXClientTSMTable; j++)
-	 {
-				if(	!table[j].state )
+	int j;
+	for(j=0; j<MAXClientTSMTable; j++)
+	{
+		if(	!table[j].state )
+		{
+			if( s==table[j].source && d==table[j].destination )
+			{
+				//if( table[j].data[1]==table[j].invokeID )
+				if( data[1]==table[j].invokeID )
 				{
-					if( s==table[j].source && d==table[j].destination )
-					{
-//						if( table[j].data[1]==table[j].invokeID )
-						if( data[1]==table[j].invokeID )
-						{
-							memcpy(table[j].data, data, length);
-						  table[j].LengthReceivedClientAPDU = length;
-							table[j].state = 1;
-							if( table[j].task >= 0 )
-								resume(table[j].task);
-            }
-						break;
-					}
+					memcpy(table[j].data, data, length);
+					table[j].LengthReceivedClientAPDU = length;
+					table[j].state = 1;
+					if( table[j].task >= 0 )
+					resume(table[j].task);
 				}
-	 }
+				break;
+			}
+		}
+	}
 }
 
 void ClientTSMTable::free( int entry )
 {
- set_semaphore(&client_entry);
- if(entry>=0 && entry<MAXClientTSMTable )
- {
-	table[entry].state = CTSM_ILLEGAL;
-	table[entry].task  = CTSM_ILLEGAL;
- }
- clear_semaphore(&client_entry);
+	set_semaphore(&client_entry);
+	if(entry>=0 && entry<MAXClientTSMTable )
+	{
+		table[entry].state = CTSM_ILLEGAL;
+		table[entry].task  = CTSM_ILLEGAL;
+	}
+	clear_semaphore(&client_entry);
 }
 #endif //RS485
 
@@ -826,9 +830,10 @@ void ServerTSMTable::resetsegments(int entry)
 
 int ServerTSMTable::lookid(int n, int d, int s, char service, int id, POOL *spool)
 {
+	int i;
  int j;
  j=-1;
- for(int i=0; i<MAXServerTSMTable; i++)
+ for(i=0; i<MAXServerTSMTable; i++)
  {
 	if(table[i].state != STSM_ILLEGAL)
 	{
@@ -869,7 +874,7 @@ int ServerTSMTable::lookid(int n, int d, int s, char service, int id, POOL *spoo
 
 void ServerTSMTable::free( int entry, int n, int d, int s, int id)
 {
- unsigned l;
+ //unsigned l;
  if(entry<0)
 	for(entry=0; entry<MAXServerTSMTable; entry++)
 	{
