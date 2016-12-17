@@ -22,7 +22,7 @@ extern void newdelete(void *ptr);
 
 extern char huge search_str[41];
 extern char huge replace_str[41];
-extern char huge deletebuf[MAX_KILL_BUF_SIZE];
+char deletebuf[MAX_KILL_BUF_SIZE];
 
 extern int mode_text;
 extern int networkaddress;

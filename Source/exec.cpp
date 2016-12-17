@@ -35,18 +35,19 @@ struct point_info_table {
 		char *offtext;
 		};
 extern int printalarmproc(char *mes, int j);
+#ifdef BAS_TEMP
 extern void updatetimevars(void);
+#endif //BAS_TEMP
 extern int	print(char *message);
 extern int checkalarmentry(void);
 //extern int checkforalarm(char *mes, int prg, int panel, int t=0);
 extern int checkforalarm(char *mes, int prg, int panel, int id = 0 );
 #ifdef BAS_TEMP
-uint search_point( Point &point, char *buff, char * & point_adr, uint & point_length, Search_type order );
-#else //BAS_TEMP
 uint search_point( Point &point, char *buff, char * point_adr, uint point_length, Search_type order );
 #endif //BAS_TEMP
 extern int get_point(Point point, long *value, char **p);
 extern unsigned long ReadTime( void );
+#ifdef BAS_TEMP
 extern int update_prg(char *buf, int ind_prg, char *code, Str_program_point *ptrprg, int panel, GEdit *pe=NULL);    // buff=0 local, #0 dist
 extern int send_grp(int local, int index_obj, int current_grp, Str_grp_element *group_element, int curline=2, int curcol=1, int panel=0, int network=0, int elem_index=0);
 extern void update_value_grp_elem(Str_grp_element *group_element, int nr_elements, int pri=0);
@@ -56,13 +57,14 @@ extern char *updatenetmemdig(int ind, int *length, char * = NULL);
 extern int put_point_info(Point_info *point_info);
 extern int	get_point_info(Point_info *point_info, char **des=NULL, char **label=NULL, char **ontext=NULL, char **offtext=NULL, char pri=0, int network = 0xFFFF);
 //extern char * rtrim( char * );
-#ifdef BAS_TEMP
 extern void save_m(void);
 extern void initanalogmon(void);
 #endif //BAS_TEMP
 extern int getfiles(char *term, char (*files)[13], int nmax, int local);
 extern int getdirectories(char *nname, char (*directories)[13], int nmax, int local);
+#ifdef BAS_TEMP
 extern void update_alarm_tbl(Alarm_point *block, int max_points_bank );
+#endif //BAS_TEMP
 
 extern char printAlarms;
 extern Time_block ora_current;
@@ -85,11 +87,13 @@ extern char sleep_modem;
 extern char save_passwords, save_file, load_file, save_default,updatenet_flag;
 extern char action;
 extern char saveloadfilename[13];
+#ifdef BAS_TEMP
 extern char save_monitor_status;
 extern char present_analog_monitor;
 extern char save_monitor;
 extern char save_monitor_command, save_monitor_status;
 extern char monitor_accessed;
+#endif //BAS_TEMP
 extern char *ptr_filetransfer;
 extern long length_filetransfer;
 extern char filetransfer_flag, filetransfer;
@@ -122,6 +126,7 @@ char term_tr[13];
 int execute_command( Media_type media, Command_type comm, void *s_port,
 										 char *ser_data, struct TSMTable *ptrtable, int destport )
 {
+#ifdef BAS_TEMP
 	byte comm_code, ex_high=0;
 	uint bank, res, n, len;
 	char *data_pointer, *ptr, moved=0;
@@ -352,7 +357,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 				{
 				 if( length == ptrtable->length )
 				 {
+#ifdef BAS_TEMP
 					 update_alarm_tbl((Alarm_point *)ser_data, ptrtable->length / sizeof(Alarm_point));
+#endif //BAS_TEMP
 				 }
 
 				 return 0;
@@ -383,6 +390,7 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 #ifdef NETWORK_COMM
 		 if( media == NETBIOS  )
 		 {
+#ifdef BAS_TEMP
 			if( comm == TRANSFER_DATA )
 			{
 				update_prg( net_p->ses_info[session].data, bank, NULL, NULL, Station_NUM );
@@ -391,6 +399,7 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 			{
 				update_prg( net_p->ses_info[session].buffer+8, bank, NULL, NULL, Station_NUM );
 			}
+#endif //BAS_TEMP
 			if( comm == SEND_COMMAND )
 			{
 				len = 8;
@@ -436,7 +445,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 #ifdef SERIAL_COMM
 				if(ptrtable->command > 100)
 				{
+#ifdef BAS_TEMP
 					update_prg( ser_data, bank, NULL, NULL, Station_NUM );
+#endif //BAS_TEMP
 					save_prg_flag = 1;
 
 					return 0;
@@ -488,14 +499,16 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 				}
 				if( comm == TRANSFER_COMMAND )
 				{
+#ifdef BAS_TEMP
 					send_grp( 2, length / sizeof( Str_grp_element ), bank, ( Str_grp_element *)(net_p->ses_info[session].buffer+8) );
-
+#endif //BAS_TEMP
 					return 0;
 				}
 				if( comm == TRANSFER_DATA )
 				{
+#ifdef BAS_TEMP
 					send_grp( 2, length / sizeof( Str_grp_element ), bank, ( Str_grp_element *)net_p->ses_info[session].data );
-
+#endif //BAS_TEMP
 					return 0;
 				}
 				data_pointer = (char *)ptr_panel->control_group_elements[bank].ptrgrp;
@@ -507,7 +520,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 #ifdef SERIAL_COMM
 				if(ptrtable->command > 100)
 				{
+#ifdef BAS_TEMP
 					send_grp( 2, ptrtable->length / sizeof( Str_grp_element ), bank, ( Str_grp_element *)(ser_data) );
+#endif //BAS_TEMP
 					save_prg_flag = 1;
 
 					return 0;
@@ -535,7 +550,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 						ptrtable->pool_index = l;
 					 }
 					}
+#ifdef BAS_TEMP
 					update_value_grp_elem(grp->ptrgrp,grp->nr_elements,3);
+#endif //BAS_TEMP
 					//movedata( FP_SEG(grp->ptrgrp), FP_OFF(grp->ptrgrp),
 					//				 FP_SEG(ser_data), FP_OFF(ser_data), length);
 					memcpy(ser_data, grp->ptrgrp, length);
@@ -676,8 +693,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 				d.da_day = ora_current.dayofmonth;
 				d.da_mon = ora_current.month+1;
 				setdate(&d);
-#endif //BAS_TEMP
+
 				updatetimevars();
+#endif //BAS_TEMP
         sendtime = 1;
         sendtime_ipx = 1;
 				enable();
@@ -699,13 +717,16 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					len = 8;
 					if( net_p->ses_info[session].ses_own == REMOTE )
 					{
+#ifdef BAS_TEMP
 						if(comm_code==22)
 							net_p->ses_info[session].data = readmontable( bank, (int *)&length, &mon_table, 1 );
+
 						if(comm_code==23 )
 							if(  bank < 0x8000 )
 								net_p->ses_info[session].data = newnetmem(bank, (int *)&length);
 							else
 								net_p->ses_info[session].data = updatenetmemdig(bank-0x8000, (int *)&length);
+#endif //BAS_TEMP
 					}
 					_fmemcpy( (net_p->ses_info[session].buffer+6), (char*)&length, 2);
 					net_p->ses_info[session].buffer[2] += 100;
@@ -750,7 +771,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 						 ser_data = port_ptr.cd->ser_data+l;
 						 ptrtable->pool_index = l;
 						}
+#ifdef BAS_TEMP
 						p = readmontable( bank, (int *)&length, &mon_table, 2 , ser_data);
+#endif //BAS_TEMP
 					}
 					if(comm_code==UPDATEMEMMONITOR_T3000)
 					{
@@ -761,10 +784,12 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 						 ptrtable->pool_index = l;
 						}
 //						if( SERIAL_BUF_SIZE - free_pool_index < 6500 ){asm pop es; return 1;}
+#ifdef BAS_TEMP
 						if(  bank < 0x8000 )
 							p = newnetmem(bank, (int *)&length, ser_data);
 						else
 							p = updatenetmemdig(bank-0x8000, (int *)&length, ser_data);
+#endif //BAS_TEMP
 					}
 //					memmove( ser_p->ser_data, p, length );
 //					mfarfree((HANDLE)FP_SEG(p));
@@ -795,11 +820,13 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 			pi = &ptr_panel->analog_mon[bank-1].inputs[0];
 			for(i=0;i<MAX_POINTS_IN_MONITOR;i++,pi++)
 			{
+#ifdef BAS_TEMP
 			if(!pi->zero())
 			{
 			 memcpy(&point_info_table->point_info.point,pi,sizeof(Point_Net));
 			 get_point_info(&point_info_table->point_info, NULL, NULL, NULL, NULL, 1, NetworkAddress);
 			}
+#endif //BAS_TEMP
 			point_info_table++;
 			}
 			moved = 1;
@@ -849,7 +876,10 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 */
 				if(ptrtable->command > 100)
 				{
-				 send_grp( (bank&0x00FF)+3, ptrtable->length / sizeof( Str_grp_element ), (bank>>8), ( Str_grp_element *)(ser_data), 2, 1, 0, 0, ptrtable->res );
+#ifdef BAS_TEMP
+				 send_grp( (bank&0x00FF)+3, ptrtable->length / sizeof( Str_grp_element ), (bank>>8), ( Str_grp_element *)(ser_data), 2, 1, 0, 0, ptrtable->res 
+				 );
+#endif //BAS_TEMP
 				 save_prg_flag = 1;
 				}
 
@@ -911,12 +941,16 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					_fmemcpy( &len, net_p->ses_info[session].buffer+3, 2 );
 					point.point_type = len;
 					len = 0;
+					#ifdef BAS_TEMP
 					length = search_point( point, NULL, NULL, 0, LENGTH_POINT );
-					_fmemcpy( net_p->ses_info[session].buffer+6, &length, 2 );
+					#endif //BAS_TEMP
+					memcpy( net_p->ses_info[session].buffer+6, &length, 2 );
 					if( length < SES_BUF_LEN - 8 )
 					{
+						#ifdef BAS_TEMP
 						search_point( point, net_p->ses_info[session].buffer+8, NULL, 0,
 																				DESCRIPTOR_POINT );
+						#endif //BAS_TEMP
 						len = length + 8;
 					}
 					else
@@ -933,8 +967,10 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					_fmemcpy( &length, net_p->ses_info[session].buffer+6, 2 );
 					_fmemcpy( &type, net_p->ses_info[session].buffer+3, 2 );
 					point.point_type = type;
+					#ifdef BAS_TEMP
 					search_point( point, net_p->ses_info[session].data, NULL, 0,
 																				DESCRIPTOR_POINT );
+					#endif //BAS_TEMP
 					net_p->ses_info[session].state = SENDING_DATA;
 					net_p->send( session, net_p->ses_info[session].data, length );
 
@@ -949,7 +985,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 				{
 //					len = ptrtable->arg;
 					point.point_type = ptrtable->arg;
+					#ifdef BAS_TEMP
 					length = search_point( point, NULL, NULL, 0, LENGTH_POINT );
+					#endif //BAS_TEMP
 					if( !(l=port_ptr.cd->ser_pool.alloc(length)) ) {  return 1;}
 					else
 					{
@@ -961,7 +999,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					 if (free_pool_index+length>=SERIAL_BUF_SIZE){  return 1;}
 */
 					data_pointer = ser_data;
+					#ifdef BAS_TEMP
 					search_point( point, data_pointer, NULL, 0, DESCRIPTOR_POINT );
+					#endif //BAS_TEMP
 					moved = 1;
 				}
 #endif
@@ -1018,13 +1058,17 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					{
 					 if( destport!=-1 )
 					 {
+						 #ifdef BAS_TEMP
 						((class ConnectionData *)Routing_table[destport].ptr)->station_list[Station_NUM-1].des_length = search_point( point, NULL, NULL, 0, LENGTH );
+						#endif //BAS_TEMP
 						((class ConnectionData *)Routing_table[destport].ptr)->panel_info1.des_length = ((class ConnectionData *)Routing_table[destport].ptr)->station_list[Station_NUM-1].des_length;
 						data_pointer = (char*)(((class ConnectionData *)Routing_table[destport].ptr)->station_list);
 					 }
 					 else
 					 {
+						 #ifdef BAS_TEMP
 						((class ConnectionData *)s_port)->station_list[Station_NUM-1].des_length = search_point( point, NULL, NULL, 0, LENGTH );
+						#endif //BAS_TEMP
 						((class ConnectionData *)s_port)->panel_info1.des_length = ((class ConnectionData *)s_port)->station_list[Station_NUM-1].des_length;
 						data_pointer = (char*)(((class ConnectionData *)s_port)->station_list);
 					 }
@@ -1045,19 +1089,25 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 								(Routing_table[i].status&TCPIP_ACTIVE)==TCPIP_ACTIVE ||
 								(Routing_table[i].status&RS485_ACTIVE)==RS485_ACTIVE   )
 						{
+							#ifdef BAS_TEMP
 						 ((class ConnectionData *)Routing_table[i].ptr)->station_list[Station_NUM-1].des_length = search_point( point, NULL, NULL, 0, LENGTH );
+						 #endif //BAS_TEMP
 						 ((class ConnectionData *)Routing_table[i].ptr)->panel_info1.des_length = ((class ConnectionData *)Routing_table[i].ptr)->station_list[Station_NUM-1].des_length;
 						 data_pointer = (char*)(((class ConnectionData *)Routing_table[i].ptr)->station_list);
 						}
 						else
 						{
+							#ifdef BAS_TEMP
 						 station_list[Station_NUM-1].des_length = search_point( point, NULL, NULL, 0, LENGTH );
+						 #endif //BAS_TEMP
 						 data_pointer = (char*)station_list;
 						}
 					 }
 					 else
 					 {
+						 #ifdef BAS_TEMP
 						station_list[Station_NUM-1].des_length = search_point( point, NULL, NULL, 0, LENGTH );
+						#endif //BAS_TEMP
 						data_pointer = (char*)station_list;
 					 }
 					}
@@ -1264,7 +1314,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					break;
 				case PANEL_INFO1_COMMAND:
 					length = sizeof(Panel_info1);
+#ifdef BAS_TEMP
 					len  = search_point( point, NULL, NULL, 0, LENGTH );
+#endif //BAS_TEMP
 //					if( media == RS485_LINK )
 					if( media == IPX_LINK || media == TCPIP_LINK || media == RS485_LINK )
 					{
@@ -1352,7 +1404,9 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 					length = 0;
 
 					*data_pointer++ = sizeof(Panel_info1);
+#ifdef BAS_TEMP
 					len  = search_point( point, NULL, NULL, 0, LENGTH );
+#endif //BAS_TEMP
 					if( media == IPX_LINK || media == TCPIP_LINK || media == RS485_LINK )
 					{
 					 if( destport!=-1 )
@@ -1659,6 +1713,7 @@ int execute_command( Media_type media, Command_type comm, void *s_port,
 		}
 	}
 #endif
+#endif //BAS_TEMP
  return 0;
 }
 #endif

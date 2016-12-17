@@ -34,13 +34,13 @@ extern void newdelete(void *ptr);
  *****************************************************************************/
  
 class GGrid;
-
+#endif //BAS_TEMP
 typedef struct {
 	long     time;
 	unsigned onoff  : 1 ;  // 0=OFF 1=ON
 	unsigned next   :15 ;
 } Heap_dmon;
-#endif //BAS_TEMP
+
 typedef struct {
 	char view_name[11];
 	char onoff;

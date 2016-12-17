@@ -158,6 +158,7 @@ int maxFrame;
 // used for ethernet port
 int sendpoints(char *asdu, char type, int port, int net) //0 want_points, 1 network_points
 {
+#ifdef BAS_TEMP
 	class ConnectionData *cdata;
 	class Point_Net point;
 	int  i,j,k,np;
@@ -293,6 +294,7 @@ int sendpoints(char *asdu, char type, int port, int net) //0 want_points, 1 netw
 //		 memset(network_points_list, 0, sizeof(network_points_list));
 	 return i;
 	}
+#endif //BAS_TEMP
 	return 0;
 }
 
@@ -300,6 +302,7 @@ int sendpoints(char *asdu, char type, int port, int net) //0 want_points, 1 netw
 //           if time want points
 void MSTP::sendpoints(char *asdu, char type) //0 want_points, 1 network_points
 {
+#ifdef BAS_TEMP
 // NETWORK_POINTS		*np;
  class Point_Net point;
 // char apci[MAXAPCI];
@@ -495,6 +498,7 @@ void MSTP::sendpoints(char *asdu, char type) //0 want_points, 1 network_points
 	 memset(network_points_list, 0, sizeof(network_points_list));
 */
 	}
+#endif //BAS_TEMP
 }
 
 MSTP_RECEIVEDFRAMEPOOL::MSTP_RECEIVEDFRAMEPOOL(void)
@@ -759,6 +763,7 @@ void MSTP_SENDFRAMEPOOL::Empty(void)
 //void sendinfo(FRAME *frame, int status, int panel, int dest=255 )
 int sendinfo(char *Buffer, int status, int panel, int dest, int port )
 {
+#ifdef BAS_TEMP
  class ConnectionData *cdata;
  int i=0, l;
  cdata = (class ConnectionData *)Routing_table[port].ptr;
@@ -814,6 +819,7 @@ int sendinfo(char *Buffer, int status, int panel, int dest, int port )
 //  Aug 29, 1997  <-
 		}
 		return i;
+#endif //BAS_TEMP	
 }
 
 int sendinfo(FRAME *frame, int status, int panel, int port )
@@ -949,6 +955,7 @@ void MSTP::sendinfo(FRAME *frame, int status, int panel, int dest )
 
 MSTP::MSTP( int c_port, int n_port ):Serial( c_port, n_port )
 {
+#ifdef BAS_TEMP
 	char* point_adr;
 	uint point_length;
 	
@@ -981,10 +988,12 @@ MSTP::MSTP( int c_port, int n_port ):Serial( c_port, n_port )
 //	ptr_ser_pool = &ser_pool;
 //   ptr_h =  (Header_pool *)ser_pool.buf;
 //	ser_p = this;
+#endif //BAS_TEMP
 }
 
 void MSTP::MSTP_Master_initialize(void)
 {
+#ifdef BAS_TEMP
  TS = Station_NUM;  //node address
  NS = TS;
  PS = TS;
@@ -1003,10 +1012,12 @@ void MSTP::MSTP_Master_initialize(void)
  memset(response_router_points_list, 0, sizeof(response_router_points_list));
  wp_rs485_networkpoints_type = 0;
  np_rs485_networkpoints_type = 0;
+#endif //BAS_TEMP
  }
 
 int MSTP::MSTP_Master_node( MSTP *mstp )
 {
+#ifdef BAS_TEMP
 /* if two RS485 ports installed, no variables on stack
 	 are allowed */
  //int mcr;
@@ -1905,11 +1916,13 @@ if (mode_text)
 // delete ser_rs485;
 // ser_rs485 = NULL;
  resume_suspend( PROJ, MSTP_MASTER ); //		task_switch();
+#endif //BAS_TEMP
 }
 
 //int clientprocedure( ClientTSMStateEnum state, char command, int bank, char *asdu, char **data, int lmax, unsigned int &length, unsigned int &length_asdu, unsigned int &last_length)
 int clientprocedure( char command, int bank, char *asdu, char **data, int lmax, unsigned int &length, unsigned int &length_asdu, unsigned int &last_length)
 {
+#ifdef BAS_TEMP
  unsigned int l;
  int str_new_size;
  char *ptr;
@@ -1975,6 +1988,7 @@ int clientprocedure( char command, int bank, char *asdu, char **data, int lmax, 
  }
  last_length += length_asdu;
  return WRITE;
+#endif //BAS_TEMP
 }
 
 // cl=0 application,  cl=1 context; t=tag number
@@ -2036,6 +2050,7 @@ int ClientTransactionStateMachine(
 			 char bytearg=0, int task = -1, int port = -1, int others = 0
 			)
 {
+#ifdef BAS_TEMP
  char apci[MAXAPCI], asdu[MAXAPDUSIZE], laststate;
  //char *ptr, maxresp;
  char next, win_size, retry=0, compressed=0, invokeid;
@@ -3128,6 +3143,7 @@ mxyputs(20,20,xxxx,Black,White);
 // ClientDA = 0;
  ClientTSMTable.free(current);
  return error;
+#endif //BAS_TEMP
 }
 
 //char xxxx[10],gg=22;
@@ -3185,6 +3201,7 @@ void pex1(struct TSMTable *PTRtable)
 */
 int serverBACnet(int port, ServicePrimitive event, char service, char *asdu, int length_asdu, int entryServerTSMTable, int *ind=NULL, int destport=-1)
 {
+#ifdef BAS_TEMP
  BACnetObjectIdentifier obj;
  T3000PropertyIdentifier property;
  uint i;
@@ -3229,10 +3246,12 @@ int serverBACnet(int port, ServicePrimitive event, char service, char *asdu, int
 	}
 //	buf[l++] = 0x3F;           //Closing Tag 3
  }
+#endif //BAS_TEMP
 }
 
 int serverprocedure( int port, ServicePrimitive event, char *asdu, int length_asdu, int entryServerTSMTable, int *ind=NULL, int destport=-1)
 {
+#ifdef BAS_TEMP
  byte comm_code, ex_high;
  unsigned int bank, n, ret, i, j, k;
  char res,*ptr, extralow, extrahigh, comm_type;
@@ -3723,6 +3742,7 @@ if (mode_text)
 	}
 	return 1;
  }
+#endif //BAS_TEMP
 }
 
 //void ServerTransactionStateMachine(
@@ -3731,6 +3751,7 @@ void ServerTransactionStateMachine( int port, int network, int destination,
 																		int source, char *apdu, int length_apdu,
 																		int entrytimeout=-1, int destport=-1 )
 {
+#ifdef BAS_TEMP
  char apci[MAXAPCI];
  char s1,s,next,win_size, postponed;
  char *asdu;
@@ -4648,6 +4669,7 @@ if(xxxx++==2)
 		msleep(SERVERTSM,n);
 	}
  }
+#endif //BAS_TEMP
 }
 
 /*
@@ -4935,6 +4957,7 @@ int MSTP::MSTP_receive_frame(MSTP *mstp)
 
 void MSTP::SendFrame(FRAME *frame, char wait)
 {
+#ifdef BAS_TEMP
  RS232Error status;
  char *p, buf[8];
  int crc,ind;
@@ -5105,6 +5128,7 @@ void MSTP::SendFrame(FRAME *frame, char wait)
 // disable the transmit line driver
 	UsedToken = true;
  }
+#endif //BAS_TEMPs
 }
 
 char getID(void)
@@ -5118,6 +5142,7 @@ int networklayer( int service, int priority, int network, int destination, int s
 						char *asdu_npdu, int length_asdu_npdu, char *apci, int length_apci,
 						int data_expecting_reply, int clientserver, int port)
 {
+#ifdef BAS_TEMP
  signed char n;
  char npci[MAXAPCI];
  int i, j, length_npci, nextentry, router_address;
@@ -5682,6 +5707,7 @@ class ConnectionData *cdata;
 	 }
 	}
  }
+#endif //BAS_TEMP
 }
 
 int checkTSMtimeout(int update)

@@ -1,33 +1,48 @@
-#ifdef BAS_TEMP
+/******************************************************************************
+ * File Name: dial.cpp
+ * 
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+
+/******************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+ 
 #include <stdio.h>
-#include <dos.h>
-#include <mem.h>
-#include <alloc.h>
 #include <stdlib.h>
-#include <conio.h>
 #include <string.h>
-#include <windows.h>
-#include <bios.h>
-#include <graphics.h>
 #include "aio.h"
 #include "t3000def.h"
 #include "mtkernel.h"
-#include "gwin.h"
-#include "vga12.h"
+//#include "gwin.h"
+//#include "vga12.h"
 #include "rs232.h"
 #include "serial.h"
 #include "rs485.h"
-#include "ptp.h"
+//#include "ptp.h"
 
-char pixul;
+/******************************************************************************
+ * USER DEFINED TYPEs
+ *****************************************************************************/
+ 
 struct input_buffer {
-		unsigned time;
-		union {
-			int   i;
-			char  key[2];
-			} key;
-		};
+	unsigned time;
 
+	union {
+		int   i;
+		char  key[2];
+	} key;
+};
+		
+/******************************************************************************
+ * GLOBALs
+ *****************************************************************************/
+ 
+char pixul;
+#ifdef BAS_TEMP
 extern Str_grp_element	*group_element_temp;
 extern int current_point_GRP;
 extern uint update_length;
@@ -97,12 +112,17 @@ char *updatebuffer;
 char huge print_message_ptr[3072];
 POOL print_message_pool(print_message_ptr, 3072);
 
-char *printerrtext = "    ALARM! PRINTER ERROR!";
-
+char printerrtext[] = "    ALARM! PRINTER ERROR!";
+#endif //BAS_TEMP
+/******************************************************************************
+ * FUNCTION DEFINATIONs
+ *****************************************************************************/
+ 
 // type = 0 rename .prg as _rg
 // type = 1 restore ._rg as .prg
 void saveoldprg(char *fname,char type=0)
 {
+#ifdef BAS_TEMP
 	char defaultname[65];
 	if(type==2)
 	{
@@ -129,10 +149,12 @@ void saveoldprg(char *fname,char type=0)
 	 }
 	 clear_semaphore_dos();
 	}
+#endif //BAS_TEMP
 }
 
 int dial_init(void)
 {
+#ifdef BAS_TEMP
 	Serial *ser_m;
 	int i, sleep_flag;
 	while( 1 )
@@ -237,10 +259,12 @@ asm pop es;
 	 else
 		suspend(DIAL);
 	}
+#endif //BAS_TEMP
 }
 
 int miscellaneous_init( void )
 {
+#ifdef BAS_TEMP
  int n,sleep;
 // Serial *sptr;
 	ConnectionData *cdata;
@@ -636,22 +660,27 @@ int miscellaneous_init( void )
 	 }
 	 suspend(MISCELLANEOUS);
  }
+#endif //BAS_TEMP
 }
 
 
 void *newalloc(long size)
 {
+#ifdef BAS_TEMP
  set_semaphore_dos();
  void *ptr = new char[size];
  clear_semaphore_dos();
  return ptr;
+#endif //BAS_TEMP
 }
 
 void newdelete(void *ptr)
 {
+#ifdef BAS_TEMP
  set_semaphore_dos();
  delete (void *)ptr;
  clear_semaphore_dos();
+#endif //BAS_TEMP
 }
 
 /*
@@ -676,6 +705,7 @@ static void operator delete[](void *ptr)
 */
 void POOL::init_pool(char *p, int l)
 {
+#ifdef BAS_TEMP
  Header_pool *h;
  length = l;
  first = last = access = 0;
@@ -685,6 +715,7 @@ void POOL::init_pool(char *p, int l)
  h->length=l-sizeof(Header_pool);
  h->next=0;
  h->last=0xFFFF;
+#endif //BAS_TEMP
 }
 
 POOL::POOL(char *p, int l)
@@ -698,6 +729,7 @@ POOL::POOL(void)
 
 char *POOL::put(char *p, int l)
 {
+#ifdef BAS_TEMP
  int i,j;
  Header_pool *h;
  h = (Header_pool *)(buf+last);
@@ -731,18 +763,22 @@ char *POOL::put(char *p, int l)
  h->length = j - l - sizeof(Header_pool);
  h->next   = 0;
  h->last   = i;
+#endif //BAS_TEMP
 }
 
 char *POOL::next(void)
 {
+#ifdef BAS_TEMP
  if( ((Header_pool *)(buf+first))->status )
 	return ( buf+first+sizeof(Header_pool) );
  else
 	return 0;
+#endif //BAS_TEMP
 }
 
 void POOL::release(void)
 {
+#ifdef BAS_TEMP
  Header_pool *h;
  int i;
  h = (Header_pool *)(buf+last);
@@ -762,10 +798,12 @@ void POOL::release(void)
   h->length += ((Header_pool *)(buf+first))->length + sizeof(Header_pool);
   first = ((Header_pool *)(buf+first))->next;
  }
+#endif //BAS_TEMP
 }
 
 unsigned POOL::alloc(int l)
 {
+#ifdef BAS_TEMP
  unsigned i,j,offset,next;
  Header_pool *h;
  if (access) return 0;
@@ -810,10 +848,12 @@ unsigned POOL::alloc(int l)
 	}
  }
  return offset;
+#endif //BAS_TEMP
 }
 
 void POOL::free(int offset)
 {
+#ifdef BAS_TEMP
  Header_pool *h,*h1;
  if(offset==0xFFFF) return;
  access = 1;
@@ -876,10 +916,12 @@ void POOL::free(int offset)
  }
 
  access = 0;
+#endif //BAS_TEMP
 }
 
 int print_alarm_word()
 {
+#ifdef BAS_TEMP
 	if( (local_panel && GAlarm) || (!local_panel && gAlarm) )
 	{
 	 GAlarmold = 1;
@@ -973,7 +1015,5 @@ int print_alarm_word()
 		}
 	 }
 	}
-}
-
-
 #endif //BAS_TEMP
+}

@@ -1,49 +1,76 @@
-#ifdef BAS_TEMP
-#include <windows.h>
+/******************************************************************************
+ * File Name: date.cpp
+ * 
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+
+/******************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+
 #include "fxengine.h"
 #include "t3000def.h"
-#include "graph.h"
-#include "gedit.h"
+#include "baseclas.h"
+//#include "graph.h"
+//#include "gedit.h"
 
+/******************************************************************************
+ * PREPROCESSORs
+ *****************************************************************************/
+ 
 //  max_HEAP_BUF + max_HEAP_GRP <= 64K
 //  MAX_HEAP_AMON+(long)MAX_HEAP_DIGM*sizeof(Heap_dmon)+(long)MAX_HEAP_ARRAY*4L <= 64k
 #define max_HEAP_BUF   26 * 1024
 #define max_HEAP_GRP   26 * 1024
 #define max_HEAP_AMON  26 * 1024
+#ifdef BAS_TEMP
 #define max_HEAP_DIGM  (MAX_MEM_DIG_BUF/sizeof(Heap_dmon)-1) + 100
+#endif //BAS_TEMP
 #define max_HEAP_ARRAY 10 * 1024 / 4
 unsigned int MAX_HEAP_BUF = max_HEAP_BUF;   //15000;
 unsigned int MAX_HEAP_GRP = max_HEAP_GRP;   //15000;
 unsigned int MAX_HEAP_AMON = max_HEAP_AMON;   //15000;
+#ifdef BAS_TEMP
 unsigned int MAX_HEAP_DIGM = max_HEAP_DIGM;   //15000;
+#endif //BAS_TEMP
 unsigned int MAX_HEAP_ARRAY = max_HEAP_ARRAY;   //15000;
 //#endif
 
+/******************************************************************************
+ * GLOBALs
+ *****************************************************************************/
+ 
 #ifdef WORKSTATION
-char huge heap_buf[1];
+char heap_buf[1];
 unsigned long ind_heap_buf=0;
 #else
-//char huge *heap_buf;
+//char *heap_buf;
 char *heap_buf;
 unsigned long ind_heap_buf=0;
 #endif
 
+//TBD: HANDLE is not known. Its just a fix. Use appropriate one.
+typedef int HANDLE;
+
 HANDLE heap_buf_handle;
-//char huge *heap_grp;
+//char *heap_grp;
 char *heap_grp;
 unsigned long ind_heap_grp=0;
 HANDLE heap_grp_handle;
 
-//char huge *heap_amon;
+//char *heap_amon;
 char *heap_amon;
 HANDLE heap_amon_handle;
 
-//Heap_dmon huge *heap_dmon;  // 5000
+//Heap_dmon *heap_dmon;  // 5000
 Heap_dmon *heap_dmon;  // 5000
 HANDLE heap_dmon_handle;
 unsigned first_free;
 
-//long huge *heap_array;
+//long *heap_array;
 long *heap_array;
 HANDLE heap_array_handle;
 
@@ -51,16 +78,16 @@ HANDLE heap_array_handle;
 char point_cod[MAX_TBL_BANK][5]={{"OUT"},{"IN"},{"VAR"},{"CON"},{"WR"},{"AR"},{"PRG"},{"TBL"},{"DMON"},
 													 {"AMON"},{"GRP"},{"AY"},{"ALAR"},{"UNIT"},{"PASS"}};
 
-//unsigned char huge str_max_points[AY+1]={128,128,128,128,32,8,128,5,128,96,64,48};
-//unsigned char huge mini_max_points[AY+1]={8,8,32,8,4,2,5,3,8,8,4,0};
+//unsigned char str_max_points[AY+1]={128,128,128,128,32,8,128,5,128,96,64,48};
+//unsigned char  mini_max_points[AY+1]={8,8,32,8,4,2,5,3,8,8,4,0};
 
-//char huge mons[12]={31,29,31,30,31,30,31,31,30,31,30,31};
+//char  mons[12]={31,29,31,30,31,30,31,31,30,31,30,31};
 
 unsigned char filter[8]={1,2,4,8,16,32,64,128};
 
 //int analog_limits[6]={10,10,20,10,10,20};
 
-dig_range_form huge dig_range_array[]  = {
+dig_range_form dig_range_array[]  = {
 		 { 0 , "  Unused    " , ""				 , "" , 0} ,
 		 { 1 , "  Off/ On   " , "Off"      , "On" ,0} ,
 		 { 2 , "Close/Open  " , "Close"    , "Open" ,2} ,
@@ -95,7 +122,7 @@ dig_range_form huge dig_range_array[]  = {
 		 { 29 , "Cust Dig 7  " , BLANKCHAR, BLANKCHAR ,28} ,
 		 { 30 , "Cust Dig 8  " , BLANKCHAR, BLANKCHAR ,30}
 	};
-an_range_form huge in_range_array[]  = {
+an_range_form in_range_array[]  = {
 		 { 0  , "    Unused  " , "     " 	,0} ,           /*& default 0 range */
 		 { 1  , "Y3K -40->150" , "deg.C" 	,1} ,           /*& default 0 range */
 		 { 2  , "Y3K -40->300" , "deg.F" 	,2} ,      /* range 11 */
@@ -124,7 +151,7 @@ an_range_form huge in_range_array[]  = {
 		};
 
 
-an_range_form huge var_range_array[]  = {
+an_range_form  var_range_array[]  = {
 		 { 0 , "  Unused   " , "     "  ,0} ,
 		 { 1 , "   1       " , "deg.C"  ,0} ,
 		 { 2 , "   2       " , "deg.F" 	,0} ,
@@ -173,7 +200,7 @@ an_range_form huge var_range_array[]  = {
 		 { 42 , "  42      " , "Cust8"	,0}
 	};
 
-an_range_form huge out_range_array[]  = {
+an_range_form out_range_array[]  = {
 		 { 0 , "  Unused    " , "     ", 0} ,
 		 { 1 , " 0.0 -> 10  " , "Volts", 11} ,
 		 { 2 , " 0.0 -> 100 " , "%Open", 26} ,
@@ -183,86 +210,85 @@ an_range_form huge out_range_array[]  = {
 		 { 6 , " 0.0 -> 20  " , "   ma", 14}     /* non existent */
 	};
 
-char huge *portconfl1   = " Port      not installed. Panel number      conflict. Change the panel number!";
-char huge *invalpanelnr = " Invalid panel number!. The valid panel numbers are between 1 and 32 ";
+char portconfl1[]   = " Port      not installed. Panel number      conflict. Change the panel number!";
+char invalpanelnr[] = " Invalid panel number!. The valid panel numbers are between 1 and 32 ";
 
-char huge *sourcefile  = "Source File ";
-char huge *destfile    = "Destination File ";
-char huge *local_text  = "Local ";
-char huge *remote_text = "Remote ";
-char huge *more_text   = "More...";
-char huge *autoac_text = "Auto activate";
-char huge *userac_text = "User activate";
-char huge *async_text  = "Asyncron mode";
-char huge *estab_text  = "Trying to establish connection on COM1 ...";
-char huge array_miniconf[][16]={{" Panel setting "},{" Ports setting "}};
-char huge (*files)[13];
-char huge directories[50][13];
-char huge *pressanykey="Press any key to continue...";
-char huge *grp="GRP  ";
-char huge *Main="MAIN";
-char huge *Mini="MINI";
-char huge *Suba="SUBA";
-char huge *Subb="SUBB";
-char huge *man="MAN ";
-char huge *autom="AUTO";
-char huge *nulbuf="          ";
-char huge *yes="Y";
-char huge *Yes="YES";
-char huge *No="NO ";
-char huge *lin="-";
-char huge *on="ON ";
-char huge *off="OFF";
-char huge *colon=":";
-char huge *zero="0";
-char huge *sun="SU";
-char huge *mon="MO";
-char huge *tue="TU";
-char huge *wed="WE";
-char huge *thu="TH";
-char huge *fri="FR";
-char huge *sat="SA";
-char huge *enabl="Enable ";
-char huge *disabl= "Disable";
-char huge *snothing="        ";
-char huge *analog_text="Analog";
-char huge *digital_text="Digital";
-char huge *slash="XXXXXXXX";
-char huge *hours="hours";
-char huge *days="days ";
-char huge *minut="min  ";
-char huge *tout     ="TIMEOUT";
-char huge *tindexout  ="INDEXAR";
-char huge *tioutrar   ="IRDAR";
-char huge *tioutwar   ="IWRAR";
-char huge *tioutray   ="IRDAY";
-char huge *tioutway   ="IWRAY";
-char huge *normal="Normal";
-char huge *na="N/A  ";
-char huge *com_prg_text="COM";
-char huge *hhelpline = "^L-seL ^U-Unsel ^D-Del block ^Y-Del line ^O-undO ^C-Copy ^F-Find ^N-Next ^R-Repl";
-char huge *loadtext = "File name [Load]: ";
-char huge *savetext =	"File name [Save]: ";
-char huge *searchstr = "Search string  :";
-char huge *replstr   = "Replace with   :";
-char huge *bas_text="*.BAS";
-char huge array_ranges[][11]={{"Analog    "},{"Digital   "},{"Custom dig"}};
-char huge array_access[][13]={{"Full access "},{"View only   "},{"Custom      "}};
+char sourcefile[]  = "Source File ";
+char destfile[]    = "Destination File ";
+char local_text[]  = "Local ";
+char remote_text[] = "Remote ";
+char more_text[]   = "More...";
+char autoac_text[] = "Auto activate";
+char userac_text[] = "User activate";
+char async_text[]  = "Asyncron mode";
+char estab_text[]  = "Trying to establish connection on COM1 ...";
+char array_miniconf[][16]={{" Panel setting "},{" Ports setting "}};
+char (*files)[13];
+char directories[50][13];
+char pressanykey[]="Press any key to continue...";
+char grp[]="GRP  ";
+char Main[]="MAIN";
+char Mini[]="MINI";
+char Suba[]="SUBA";
+char Subb[]="SUBB";
+char man[]="MAN ";
+char autom[]="AUTO";
+char nulbuf[]="          ";
+char yes[]="Y";
+char Yes[]="YES";
+char No[]="NO ";
+char lin[]="-";
+char on[]="ON ";
+char off[]="OFF";
+char colon[]=":";
+char zero[]="0";
+char sun[]="SU";
+char mon[]="MO";
+char tue[]="TU";
+char wed[]="WE";
+char thu[]="TH";
+char fri[]="FR";
+char sat[]="SA";
+char enabl[]="Enable ";
+char disabl[]= "Disable";
+char snothing[]="        ";
+char analog_text[]="Analog";
+char digital_text[]="Digital";
+char slash[]="XXXXXXXX";
+char hours[]="hours";
+char days[]="days ";
+char minut[]="min  ";
+char tout[]     ="TIMEOUT";
+char tindexout[]  ="INDEXAR";
+char tioutrar[]   ="IRDAR";
+char tioutwar[]   ="IWRAR";
+char tioutray[]   ="IRDAY";
+char tioutway[]   ="IWRAY";
+char normal[]="Normal";
+char na[]="N/A  ";
+char com_prg_text[]="COM";
+char hhelpline[] = "^L-seL ^U-Unsel ^D-Del block ^Y-Del line ^O-undO ^C-Copy ^F-Find ^N-Next ^R-Repl";
+char loadtext[] = "File name [Load]: ";
+char savetext[] =	"File name [Save]: ";
+char searchstr[] = "Search string  :";
+char replstr[]   = "Replace with   :";
+char bas_text[]="*.BAS";
+char array_ranges[][11]={{"Analog    "},{"Digital   "},{"Custom dig"}};
+char array_access[][13]={{"Full access "},{"View only   "},{"Custom      "}};
 
-char huge filetransfername[65];
-char huge *disconnect_mes="   If no activity connection will be          interrupted in     seconds!";
+char filetransfername[65];
+char disconnect_mes[]="   If no activity connection will be          interrupted in     seconds!";
 
-char huge current_path[65],filename_tmp[65];
-char huge ptr_mouse[512];
-char huge search_str[41];
-char huge replace_str[41];
-char huge deletebuf[MAX_KILL_BUF_SIZE];
+char current_path[65],filename_tmp[65];
+char ptr_mouse[512];
+char search_str[41];
+char replace_str[41];
 
 int worktime;
 
-NETWORK_POINTS _far	network_points_list[MAXNETWORKPOINTS];
+NETWORK_POINTS	network_points_list[MAXNETWORKPOINTS];
 //WANT_POINTS		   want_points_list[MAXREMOTEPOINTS];
-REMOTE_POINTS _far remote_points_list[MAXREMOTEPOINTS82];
+REMOTE_POINTS remote_points_list[MAXREMOTEPOINTS82];
 char remote_points_OUT;
 int remote_list_last_index_mstp, remote_list_last_index_ipx;
 
@@ -270,7 +296,7 @@ char int_disk, int_disk1;
 
 int networkaddress;
 int NetworkAddress=1;
-char far NetworkName[NAME_SIZE]={'N','E','T','W','O','R','K','1',0};
+char NetworkName[NAME_SIZE]={'N','E','T','W','O','R','K','1',0};
 
 Str_tbl_point custom_tab[MAX_TABS];
 
@@ -376,4 +402,3 @@ range_form huge range_array[MAX_RANGE]  = {
 		 }   ;
 */
 //
-#endif //BAS_TEMP

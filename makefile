@@ -7,7 +7,7 @@ VPATH = ./Source:./:./OBJ
 
 OUTPUT_OPTION = -o OBJ/$@
 
-CXXFLAGS = -Wall
+CXXFLAGS = -Wall -fpermissive
 
 Target = BAS_RPi_Port
 
