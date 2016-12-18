@@ -1,7 +1,7 @@
 #Start of the makefile
 
 CXX = g++
-LDFLAGS = -lwiringPi
+LDFLAGS = -lwiringPi -pthread
 
 VPATH = ./Source:./:./OBJ
 

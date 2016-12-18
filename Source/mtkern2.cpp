@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <semaphore.h>
 #include <unistd.h>
 #include <signal.h>
 #include <syscall.h>
@@ -17,6 +18,7 @@
 #include "t3000def.h"
 #include "mtkernel.h"
 
+#ifdef BAS_TEMP
 extern void UnhookHandlers(void);
 #ifdef BAS_TEMP
 extern void interrupt int8_task_switch( __CPPARGS );
@@ -24,8 +26,8 @@ extern void interrupt (*old_int8 )( __CPPARGS );
 #endif //BAS_TEMP
 extern void set_semaphore_dos(void);
 extern void clear_semaphore_dos(void);
-extern void set_semaphore( unsigned *sem );
-extern void clear_semaphore( unsigned *sem );
+extern void set_semaphore( sem_t *sem );
+extern void clear_semaphore( sem_t *sem );
 extern int decode( unsigned char *line, int size, signed char *buf )   ;
 extern int encode( unsigned char *line, int size , signed char *buf);
 extern int bioskey_new(int cmd);
@@ -408,9 +410,10 @@ void moutchar( int x, int y, char ch )
 	 *v++ = ch; 				// write the character
 	 *v = 7; 				// normal character
 }
-
+#endif //BAS_TEMP
 void mputchar( char ch, int bkgnd, int frgnd )
 {
+#ifdef BAS_TEMP
 	 char *v;
 	 if( ch == '\r' ) { xscreen = 0; return; }
 	 if( ch == '\n' ) { yscreen++; xscreen = 0; return; }
@@ -426,8 +429,9 @@ void mputchar( char ch, int bkgnd, int frgnd )
 	 *v++ = ch; 				// write the character
 	 *v = bkgnd; 				// normal character
 	 if (xscreen==80) xscreen = 0;
+#endif //BAS_TEMP
 }
-
+#ifdef BAS_TEMP
 int mgetch(int x, int y)
 {
  char ch,atr;
@@ -764,4 +768,4 @@ void set_vid_mem( void )
 #endif //BAS_TEMP
 }
 
-
+#endif //BAS_TEMP

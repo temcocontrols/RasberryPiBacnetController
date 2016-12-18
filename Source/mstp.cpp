@@ -471,14 +471,14 @@ void MSTP::sendpoints(char *asdu, char type) //0 want_points, 1 network_points
 	 {
 		 j = ((1+k/sizeof(NETWORK_POINTS))*46/68)+1;
 		 if( j<7 ) j = 7;
-		 msleep( j );
+		 usleep( (j*1000)/MT_TICKS_PER_SEC );
 	 }
 	 else
 	 {
 // 1.5ms per remote point for type=0
 		j = ((1+k/sizeof(point))*15/68)+1;
 		if( j<7 ) j=7;
-		msleep( j );
+		usleep( (j*1000)/MT_TICKS_PER_SEC );
 /*
 		if(i>200)
 		{
@@ -850,7 +850,7 @@ int sendinfo(FRAME *frame, int status, int panel, int port )
 
 		frame->Length = i;
 		((class MSTP *)Routing_table[port].ptr)->SendFrame((FRAME*)frame);
-		msleep(7);
+		usleep( (7*1000)/MT_TICKS_PER_SEC );
 
 		return i;
 }
@@ -1364,7 +1364,8 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 */
 			if( ps->SilenceTimer < Tno_token-1 )
 			{
-				 msleep(Tno_token-ps->SilenceTimer);
+				usleep( (Tno_token-ps->SilenceTimer*1000)/MT_TICKS_PER_SEC );
+			
          resetport--;
 			}
 			break;
@@ -1405,7 +1406,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				 mstp->SendFrame(&frame);
 				 mstp->FrameCount++;
 // wait to allow frame processing in the other panels
-				 msleep(15);
+				 usleep( (15*1000)/MT_TICKS_PER_SEC );
 				 ps->validint = 1;
 /*
 				 if(frame.Buffer[8]==SEND_WANTPOINTS_COMMAND || frame.Buffer[8]==SEND_NETWORKPOINTS_COMMAND)
@@ -1436,7 +1437,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 //			  ps->HeartbeatTimer = Treply_timeout;
 //			  msleep(120);
 //			  msleep(Treply_timeout - ps->SilenceTimer);
-			  msleep(Treply_timeout);
+			  usleep( (Treply_timeout*1000)/MT_TICKS_PER_SEC );
 //			  timerunMSTP=0xffff;
 //			  ps->HeartbeatTimer=0xffff;
 //			  if(mstp->ReceivedFramePool.RemoveEntry(ClientBuffer)<0) TimeOut=true;
@@ -1446,14 +1447,14 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				 {
 				  ps->EventCount = 0;
 				  if( Treply_timeout>ps->SilenceTimer )
-					  msleep(Treply_timeout-ps->SilenceTimer);
+					  usleep( (Treply_timeout-ps->SilenceTimer*1000)/MT_TICKS_PER_SEC );
 				  if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 				  {
 						if( ps->EventCount >= Nmin_octets )
 						{
 						  ps->EventCount = 0;
 						  if( Treply_timeout>ps->SilenceTimer )
-							  msleep(Treply_timeout-ps->SilenceTimer);
+							  usleep( (Treply_timeout-ps->SilenceTimer*1000)/MT_TICKS_PER_SEC );
 						  if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 						  {
 							 TimeOut=true;
@@ -1474,7 +1475,8 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				 else
 				 {
 					mstp->SendFrame(NULL);  //pad same bytes to announce its presents
-          msleep(16);        // allow the requested panel to finish processing 
+                  
+		  usleep( (16*1000)/MT_TICKS_PER_SEC ); // allow the requested panel to finish processing 
 					TimeOut=true;
 					if(NotResponse1)
 						NotResponse = 1;
@@ -1572,7 +1574,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 //				 ps->HeartbeatTimer = 31 - timebetweentoken;
 //				 msleep(9);
 				 if ( ps->InactivityTimer < 20 )
-					 msleep(20 - ps->InactivityTimer);
+					 usleep( ((20 - ps->InactivityTimer)*1000)/MT_TICKS_PER_SEC );
 //				 timerunMSTP=0xffff;
 //				 ps->HeartbeatTimer=0xffff;
 				}
@@ -1623,7 +1625,7 @@ int MSTP::MSTP_Master_node( MSTP *mstp )
 				ps->validint = 1;
 				ps->InactivityTimer = 0;
 				if( ps->EventCount < Nmin_octets )
-					msleep(Tusage_timeout);
+					usleep( (Tusage_timeout*1000)/MT_TICKS_PER_SEC );
 				TimeOut=true;
 //        SawTokenUser
 //			 if( SilenceTimer < Tusage_timeout && EventCount > Nmin_octets )
@@ -1755,12 +1757,12 @@ if (mode_text)
 //			  ps->HeartbeatTimer=0xffff;
 			 if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 			 {
-				msleep(Tusage_timeout);
+				usleep((Tusage_timeout*1000)/MT_TICKS_PER_SEC);
 				if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 				{
 				 if( ps->EventCount >= Nmin_octets )
 				 {
-					msleep(Tusage_timeout);
+					usleep((Tusage_timeout*1000)/MT_TICKS_PER_SEC);
 					if(mstp->ReceivedFramePool.RemoveEntry(&recframe)<0)
 						 TimeOut=true;
 				 }
@@ -2309,7 +2311,7 @@ int ClientTransactionStateMachine(
 			{
 				 if( !ptable->state )
 //					 msleep((int)(((int)(timeout))*18));  //18.2
-					 msleep(220);             //11sec 
+					 usleep((220*1000)/MT_TICKS_PER_SEC); //11 sec
 			}
 			else
 			{
@@ -2570,7 +2572,7 @@ mxyputs(20,20,xxxx,Black,White);
 			if( ptable->task  >= 0 )
 			{
 				 if( !ptable->state )
-					 msleep((int)(((int)(timeout))*18));   //18.2
+					 usleep((((int)(timeout))*18*1000)/MT_TICKS_PER_SEC);   //18.2
 			}
 			else
 			{
@@ -2901,7 +2903,7 @@ mxyputs(20,20,xxxx,Black,White);
 			if( ptable->task  >= 0 )
 			{
 				 if( !ptable->state )
-					 msleep((int)(((int)(timeout))*18));  //18.2
+					 usleep(((((int)(timeout))*18)*1000)/MT_TICKS_PER_SEC); //18.2
 			}
 			else
 			{
@@ -4665,8 +4667,11 @@ if(xxxx++==2)
 	{
 	 if (n==10000)
 		suspend(SERVERTSM);
+#ifdef BAS_TEMP
+	//TBD: Uncomment this
 	 else
 		msleep(SERVERTSM,n);
+#endif //BAS_TEMP
 	}
  }
 #endif //BAS_TEMP
@@ -5063,7 +5068,7 @@ void MSTP::SendFrame(FRAME *frame, char wait)
 	if( ind > (wait?510:((60L*(long)rate)/1000 ) ) )   // 60ms*Rate/1000
 	{
 //		msleep(250l*1000l/rate);            // 1500char*1000ms/rate/6ms
-		msleep(ind*333l/rate);            // nr_char*1000ms/rate/6ms(6=ticks)  = 2 * time need
+		usleep(((ind*333l/rate)*1000)/MT_TICKS_PER_SEC);            // nr_char*1000ms/rate/6ms(6=ticks)  = 2 * time need
 	}
 	else
 	{
@@ -5768,7 +5773,7 @@ void ServerTSM(void)
 	if( n == 10000 )
 		suspend(SERVERTSM);
 	else
-		msleep(n);
+		usleep((n*1000)/MT_TICKS_PER_SEC);
  }
 }
 

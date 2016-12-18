@@ -10,7 +10,10 @@
 	 #define __CPPARGS
 #endif
 
-#define MT_TICKS_PER_SEC (100)
+#include <pthread.h>
+#include <semaphore.h>
+
+#define MT_TICKS_PER_SEC (18) //1 Tick = 55 msec
 #define byte		unsigned char
 
 #define PROGRAM_INTERVAL 10000L
@@ -260,16 +263,13 @@ extern void kill_task( int id );
 #ifdef BAS_TEMP
 extern void interrupt task_switch( void );
 #endif //BAS_TEMP
-extern void set_semaphore(unsigned *);
-extern void clear_semaphore(unsigned *);
+extern void set_semaphore(sem_t *);
+extern void clear_semaphore(sem_t *);
 extern void set_semaphore_dos(void);
 extern void clear_semaphore_dos(void);
 extern void restore_upper_memory_link(void);
 extern void set_upper_memory_link(void);
 
-extern unsigned  t3000_flag; // i/o semaphore
-extern unsigned  screen; // i/o semaphore
-//extern unsigned  serial_wait[2]; // i/o semaphore
 extern int local_request(int);
 
 #define DIVIMAGE 2

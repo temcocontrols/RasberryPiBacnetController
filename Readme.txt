@@ -30,6 +30,14 @@ sudo apt-get install build-essential
 - Configure the firmware to 18.2 ticks/second
 
 
+### GLOSSARY ###
+
+APDU - The application Protocol Data Unit. The APDU is made up of an APCI block and an ASDU. 
+APCI - (Application Protocol Control Information) contains message control information.
+ASDU - (Application Specific Data Unit) contains information to be processed by the receiving station.
+Want-Points - A point being requested from a network. A list of want-points is created in each controller when a point in another controller is referenced in a program, system group, or trend log.
+Points - Any hardware or software object configured in a digital controller. A point can be an input, output, variable, schedule, log, or PID controller loop.
+
 
 ### BAS_RPi_Port project revision ###
 

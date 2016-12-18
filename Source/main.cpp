@@ -1,32 +1,23 @@
 #define MTKERNEL
 
 //#pragma inline
+#include <pthread.h>
+#include <semaphore.h>
 #include <stdio.h>
-#ifdef BAS_TEMP
-#include <dos.h>
-#include <mem.h>
-#include <alloc.h>
 #include <stdlib.h>
-#include <conio.h>
 #include <string.h>
-#include <time.h>
-#include <sys\timeb.h>
-#include <bios.h>
-#include <graphics.h>
-#include "mouse.h"
-#include <windows.h>
-#include "aio.h"
-#endif //BAS_TEMP
+//#include <time.h>
+//#include <sys\timeb.h>
+//#include "mouse.h"
+//#include "aio.h"
 #include "t3000def.h"
 #include "mtkernel.h"
-#ifdef BAS_TEMP
-#include "vga12.h"
+//#include "vga12.h"
 //#include "netbios.h"
-#include "color.hpp"
-#include "colormap.hpp"
+//#include "color.hpp"
+//#include "colormap.hpp"
 #include "rs485.h"
 #include "t3000hlp.h"
-#endif //BAS_TEMP
 
 #define EGAVGA 9
 #define TEXT_FOND_COLOR White
@@ -181,20 +172,19 @@ void (*real_oldHandler)(void);
 #endif //BAS_TEMP
 
 task_struct tasks[NUM_TASKS];
+pthread_t appThread[NUM_TASKS];
 
-#ifdef BAS_TEMP
-unsigned  read_mon_flag = 0; // i/o semaphore
-#endif //BAS_TEMP
-unsigned  dos_flag = 0; // i/o semaphore
+// Application Semaphore
+sem_t read_mon_flag;
+sem_t dos_flag;
+//sem_t serial_wait[2];
+sem_t screen;
+//sem_t memory;
+sem_t t3000_flag;
+sem_t print_sem;
+
 unsigned  dos_host = 0;
-//unsigned  serial_wait[2] = { 0, 0 }; // i/o semaphore
-unsigned  screen = 0; // i/o semaphore
-#ifdef BAS_TEMP
-//unsigned  memory = 0; // i/o semaphore
-unsigned  t3000_flag = 0; // i/o semaphore
-unsigned  print_sem = 0; // i/o semaphore
 
-#endif //BAS_TEMP
 char *vid_mem;	// pointer to video memory
 
 unsigned oldss, oldsp;
@@ -435,23 +425,32 @@ int main(int argc, char *argv[])
 	 make_task((taskptr) task_control, stack_NETWORK , stack_NETWORK_SIZE, NETWORK);  //-sizeof( int_regs )
 	#endif
 	#ifdef NET_BAC_COMM
-	 make_task((taskptr) net_bac_task, stack_NET_BAC, stack_NETWORK_SIZE, NETWORK1 );  //-sizeof( int_regs )
+	 //make_task((taskptr) net_bac_task, stack_NET_BAC, stack_NETWORK_SIZE, NETWORK1 );  //-sizeof( int_regs )
+	 pthread_create(&appThread[NETWORK1], NULL, net_bac_task, NULL);
 	#endif
-	 make_task((taskptr) proj, (char *)MK_FP(_SS, 0), stack_PROJ_SIZE , PROJ);
+	 //make_task((taskptr) proj, (char *)MK_FP(_SS, 0), stack_PROJ_SIZE , PROJ);
+	 pthread_create(&appThread[PROJ], NULL, proj, NULL);
 //	 make_task((taskptr) proj, stack_PROJ, stack_PROJ_SIZE , PROJ);
 //	 make_task((taskptr) serial_init, stack_SERIAL, stack_SERIAL_SIZE, SERIAL);  //-sizeof( int_regs )
 //	 make_task((taskptr) modem_init, stack_MODEM, stack_MODEM_SIZE, MODEM);  //-sizeof( int_regs )
-	 make_task((taskptr) dial_init, stack_DIAL, stack_DIAL_SIZE, DIAL);  //-sizeof( int_regs )
-	 make_task((taskptr) miscellaneous_init, stack_MISCELLANEOUS, stack_MISCELLANEOUS_SIZE, MISCELLANEOUS);  //-sizeof( int_regs )
+	 //make_task((taskptr) dial_init, stack_DIAL, stack_DIAL_SIZE, DIAL);  //-sizeof( int_regs )
+	 pthread_create(&appThread[DIAL], NULL, dial_init, NULL);
+	 //make_task((taskptr) miscellaneous_init, stack_MISCELLANEOUS, stack_MISCELLANEOUS_SIZE, MISCELLANEOUS);  //-sizeof( int_regs )
+	 pthread_create(&appThread[MISCELLANEOUS], NULL, miscellaneous_init, NULL);
 	#ifndef WORKSTATION
-	 make_task((taskptr) fnc_exec_virtual_code, stack_VIRTUAL, stack_VIRTUAL_SIZE, VIRTUAL); //-sizeof( int_regs )
-	 make_task((taskptr) savemonitors, stack_MONITOR, stack_MONITOR_SIZE, AMONITOR); //-sizeof( int_regs )
- 	 make_task((taskptr) alarmtask, stack_ALARMTASK, stack_ALARMTASK_SIZE, ALARMTASK); //-sizeof( int_regs )
-	 make_task((taskptr) nettask, stack_NETTASK, stack_NETTASK_SIZE, NETTASK); //-sizeof( int_regs )
+	 //make_task((taskptr) fnc_exec_virtual_code, stack_VIRTUAL, stack_VIRTUAL_SIZE, VIRTUAL); //-sizeof( int_regs )
+	 pthread_create(&appThread[VIRTUAL], NULL, fnc_exec_virtual_code, NULL);
+	 //make_task((taskptr) savemonitors, stack_MONITOR, stack_MONITOR_SIZE, AMONITOR); //-sizeof( int_regs )
+	 pthread_create(&appThread[AMONITOR], NULL, savemonitors, NULL);
+ 	 //make_task((taskptr) alarmtask, stack_ALARMTASK, stack_ALARMTASK_SIZE, ALARMTASK); //-sizeof( int_regs )
+	 pthread_create(&appThread[ALARMTASK], NULL, alarmtask, NULL);
+	 //make_task((taskptr) nettask, stack_NETTASK, stack_NETTASK_SIZE, NETTASK); //-sizeof( int_regs )
+	 pthread_create(&appThread[NETTASK], NULL, nettask, NULL);
 	#endif
 //	 make_task((taskptr) MSTP_Master_node, stack_MSTP_Master_node, stack_MSTP_Master_node_SIZE, MSTP_MASTER);  //-sizeof( int_regs )
 //	 make_task((taskptr) rs485_receive_frame, stack_rs485_receive_frame, stack_rs485_receive_frame_SIZE, RS485_RECEIVEFRAME);  //-sizeof( int_regs )
-	make_task((taskptr) ServerTSM, stack_ServerTSM, stack_ServerTSM_SIZE, SERVERTSM);  //-sizeof( int_regs )
+	//make_task((taskptr) ServerTSM, stack_ServerTSM, stack_ServerTSM_SIZE, SERVERTSM);  //-sizeof( int_regs )
+	pthread_create(&appThread[SERVERTSM], NULL, ServerTSM, NULL);
 
 /*
 	for( byte j=0;j<3;j++) statistic[j] = 0;
@@ -475,7 +474,6 @@ int main(int argc, char *argv[])
 	#ifdef DEMO
 	 simulate = 1;
 	#endif
-	multitask();
 
 	if(mode_text)
 	{

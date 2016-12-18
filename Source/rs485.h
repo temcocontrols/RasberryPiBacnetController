@@ -475,7 +475,7 @@ class ClientTSMTable {
 };
 
 #ifdef RS485
-unsigned client_entry;
+sem_t client_entry;
 
 ClientTSMTable::ClientTSMTable(void)
 {
