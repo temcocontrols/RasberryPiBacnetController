@@ -25,11 +25,6 @@ To install g++ compiler, enter below command:
 sudo apt-get install build-essential
 
 
-### TBD/Pending ###
-
-- Configure the firmware to 18.2 ticks/second
-
-
 ### GLOSSARY ###
 
 APDU - The application Protocol Data Unit. The APDU is made up of an APCI block and an ASDU. 
@@ -40,34 +35,3 @@ Points - Any hardware or software object configured in a digital controller. A p
 
 
 ### BAS_RPi_Port project revision ###
-
-********************************** Rev: 0.01 **********************************
-- Created baseline makefile project
-
-********************************** Rev: 0.02 **********************************
-- Ported tick task (int8_task_switch()) to Linux tick task (SIGALRM).
-- Configured 100 ticks/second. But DOS default ticks are 18.2 ticks/second. 
-
-********************************** Rev: 0.03 **********************************
-- Ported RS232.cpp to linux using wiringpi library
-
-********************************** Rev: 0.04 **********************************
-- Modified:   
-	baseclas.h
-	pc8250.h
-	ptp.cpp
-	ptp.h
-	recdef.h
-	rs485.h
-	serial.cpp
-	serial.h
-	t3000.cpp
-	t3000hlp.h
-	
-********************************** Rev: 0.05 **********************************
-- New makefile created to suit latest project folder structure
-- Some files renamed to lower-case since g++ rejects upper-case file extension
-- X.cpp commented
-
-********************************** Rev: 0.06 **********************************
-- Compilation procedure updated in Readme.txt
