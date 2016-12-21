@@ -3,15 +3,16 @@
 CXX = g++
 LDFLAGS = -lwiringPi -pthread
 
-VPATH = ./Source:./:./OBJ
+VPATH = ./Source/OS:./Source:./:./OBJ
 
 OUTPUT_OPTION = -o OBJ/$@
 
-CXXFLAGS = -Wall -fpermissive -DSERIAL_COMM -DNET_BAC_COMM -DPANELSTATION
+CXXFLAGS = -Wall -fpermissive -DSERIAL_COMM -DNET_BAC_COMM -DPANELSTATION -ISource/OS/
 
 Target = BAS_RPi_Port
 
-Objects := $(notdir $(patsubst %.cpp,%.o,$(wildcard Source/*.cpp)))
+Objects := $(notdir $(patsubst %.cpp,%.o,$(wildcard Source/*.cpp))) \
+			$(notdir $(patsubst %.cpp,%.o,$(wildcard Source/OS/*.cpp)))
 
 
 
