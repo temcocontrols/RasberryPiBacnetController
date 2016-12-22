@@ -3,11 +3,11 @@
 
 #define  MT_SOURCE
 
-#ifndef  OS_MASTER_FILE
+#ifndef  MT_MASTER_FILE
 #include "mt.h"
 #endif
 
-#if OS_MBOX_EN > 0u
+#if MT_MBOX_EN > 0u
 /*
 *********************************************************************************************************
 *                                        ACCEPT MESSAGE FROM MAILBOX
@@ -25,28 +25,28 @@
 *********************************************************************************************************
 */
 
-#if OS_MBOX_ACCEPT_EN > 0u
-void  *OSMboxAccept (OS_EVENT *pevent)
+#if MT_MBOX_ACCEPT_EN > 0u
+void  *OSMboxAccept (MT_EVENT *pevent)
 {
     void      *pmsg;
-#if OS_CRITICAL_METHOD == 3u                              /* Allocate storage for CPU status register  */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                              /* Allocate storage for CPU status register  */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                        /* Validate 'pevent'                         */
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                        /* Validate 'pevent'                         */
         return ((void *)0);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {      /* Validate event block type                 */
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {      /* Validate event block type                 */
         return ((void *)0);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     pmsg               = pevent->OSEventPtr;
     pevent->OSEventPtr = (void *)0;                       /* Clear the mailbox                         */
-    OS_EXIT_CRITICAL();
+    MT_EXIT_CRITICAL();
     return (pmsg);                                        /* Return the message received (or NULL)     */
 }
 #endif
@@ -61,45 +61,45 @@ void  *OSMboxAccept (OS_EVENT *pevent)
 *                            you set this value to the NULL pointer (i.e. (void *)0) then the mailbox
 *                            will be considered empty.
 *
-* Returns    : != (OS_EVENT *)0  is a pointer to the event control clock (OS_EVENT) associated with the
+* Returns    : != (MT_EVENT *)0  is a pointer to the event control clock (MT_EVENT) associated with the
 *                                created mailbox
-*              == (OS_EVENT *)0  if no event control blocks were available
+*              == (MT_EVENT *)0  if no event control blocks were available
 *********************************************************************************************************
 */
 
-OS_EVENT  *OSMboxCreate (void *pmsg)
+MT_EVENT  *OSMboxCreate (void *pmsg)
 {
-    OS_EVENT  *pevent;
-#if OS_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
-    OS_CPU_SR  cpu_sr = 0u;
+    MT_EVENT  *pevent;
+#if MT_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#ifdef OS_SAFETY_CRITICAL_IEC61508
-    if (OSSafetyCriticalStartFlag == OS_TRUE) {
-        OS_SAFETY_CRITICAL_EXCEPTION();
-        return ((OS_EVENT *)0);
+#ifdef MT_SAFETY_CRITICAL_IEC61508
+    if (OSSafetyCriticalStartFlag == MT_TRUE) {
+        MT_SAFETY_CRITICAL_EXCEPTION();
+        return ((MT_EVENT *)0);
     }
 #endif
 
     if (OSIntNesting > 0u) {                     /* See if called from ISR ...                         */
-        return ((OS_EVENT *)0);                  /* ... can't CREATE from an ISR                       */
+        return ((MT_EVENT *)0);                  /* ... can't CREATE from an ISR                       */
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     pevent = OSEventFreeList;                    /* Get next free event control block                  */
-    if (OSEventFreeList != (OS_EVENT *)0) {      /* See if pool of free ECB pool was empty             */
-        OSEventFreeList = (OS_EVENT *)OSEventFreeList->OSEventPtr;
+    if (OSEventFreeList != (MT_EVENT *)0) {      /* See if pool of free ECB pool was empty             */
+        OSEventFreeList = (MT_EVENT *)OSEventFreeList->OSEventPtr;
     }
-    OS_EXIT_CRITICAL();
-    if (pevent != (OS_EVENT *)0) {
-        pevent->OSEventType    = OS_EVENT_TYPE_MBOX;
+    MT_EXIT_CRITICAL();
+    if (pevent != (MT_EVENT *)0) {
+        pevent->OSEventType    = MT_EVENT_TYPE_MBOX;
         pevent->OSEventCnt     = 0u;
         pevent->OSEventPtr     = pmsg;           /* Deposit message in event control block             */
-#if OS_EVENT_NAME_EN > 0u
+#if MT_EVENT_NAME_EN > 0u
         pevent->OSEventName    = (INT8U *)(void *)"?";
 #endif
-        OS_EventWaitListInit(pevent);
+        MT_EventWaitListInit(pevent);
     }
     return (pevent);                             /* Return pointer to event control block              */
 }
@@ -114,20 +114,20 @@ OS_EVENT  *OSMboxCreate (void *pmsg)
 *                            mailbox.
 *
 *              opt           determines delete options as follows:
-*                            opt == OS_DEL_NO_PEND   Delete the mailbox ONLY if no task pending
-*                            opt == OS_DEL_ALWAYS    Deletes the mailbox even if tasks are waiting.
+*                            opt == MT_DEL_NO_PEND   Delete the mailbox ONLY if no task pending
+*                            opt == MT_DEL_ALWAYS    Deletes the mailbox even if tasks are waiting.
 *                                                    In this case, all the tasks pending will be readied.
 *
 *              perr          is a pointer to an error code that can contain one of the following values:
-*                            OS_ERR_NONE             The call was successful and the mailbox was deleted
-*                            OS_ERR_DEL_ISR          If you attempted to delete the mailbox from an ISR
-*                            OS_ERR_INVALID_OPT      An invalid option was specified
-*                            OS_ERR_TASK_WAITING     One or more tasks were waiting on the mailbox
-*                            OS_ERR_EVENT_TYPE       If you didn't pass a pointer to a mailbox
-*                            OS_ERR_PEVENT_NULL      If 'pevent' is a NULL pointer.
+*                            MT_ERR_NONE             The call was successful and the mailbox was deleted
+*                            MT_ERR_DEL_ISR          If you attempted to delete the mailbox from an ISR
+*                            MT_ERR_INVALID_OPT      An invalid option was specified
+*                            MT_ERR_TASK_WAITING     One or more tasks were waiting on the mailbox
+*                            MT_ERR_EVENT_TYPE       If you didn't pass a pointer to a mailbox
+*                            MT_ERR_PEVENT_NULL      If 'pevent' is a NULL pointer.
 *
 * Returns    : pevent        upon error
-*              (OS_EVENT *)0 if the mailbox was successfully deleted.
+*              (MT_EVENT *)0 if the mailbox was successfully deleted.
 *
 * Note(s)    : 1) This function must be used with care.  Tasks that would normally expect the presence of
 *                 the mailbox MUST check the return code of OSMboxPend().
@@ -138,92 +138,92 @@ OS_EVENT  *OSMboxCreate (void *pmsg)
 *                 applications where the mailbox is used for mutual exclusion because the resource(s)
 *                 will no longer be guarded by the mailbox.
 *              5) All tasks that were waiting for the mailbox will be readied and returned an 
-*                 OS_ERR_PEND_ABORT if OSMboxDel() was called with OS_DEL_ALWAYS
+*                 MT_ERR_PEND_ABORT if OSMboxDel() was called with MT_DEL_ALWAYS
 *********************************************************************************************************
 */
 
-#if OS_MBOX_DEL_EN > 0u
-OS_EVENT  *OSMboxDel (OS_EVENT  *pevent,
+#if MT_MBOX_DEL_EN > 0u
+MT_EVENT  *OSMboxDel (MT_EVENT  *pevent,
                       INT8U      opt,
                       INT8U     *perr)
 {
     BOOLEAN    tasks_waiting;
-    OS_EVENT  *pevent_return;
-#if OS_CRITICAL_METHOD == 3u                               /* Allocate storage for CPU status register */
-    OS_CPU_SR  cpu_sr = 0u;
+    MT_EVENT  *pevent_return;
+#if MT_CRITICAL_METHOD == 3u                               /* Allocate storage for CPU status register */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#ifdef OS_SAFETY_CRITICAL
+#ifdef MT_SAFETY_CRITICAL
     if (perr == (INT8U *)0) {
-        OS_SAFETY_CRITICAL_EXCEPTION();
-        return ((OS_EVENT *)0);
+        MT_SAFETY_CRITICAL_EXCEPTION();
+        return ((MT_EVENT *)0);
     }
 #endif
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                         /* Validate 'pevent'                        */
-        *perr = OS_ERR_PEVENT_NULL;
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                         /* Validate 'pevent'                        */
+        *perr = MT_ERR_PEVENT_NULL;
         return (pevent);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {       /* Validate event block type                */
-        *perr = OS_ERR_EVENT_TYPE;
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {       /* Validate event block type                */
+        *perr = MT_ERR_EVENT_TYPE;
         return (pevent);
     }
     if (OSIntNesting > 0u) {                               /* See if called from ISR ...               */
-        *perr = OS_ERR_DEL_ISR;                            /* ... can't DELETE from an ISR             */
+        *perr = MT_ERR_DEL_ISR;                            /* ... can't DELETE from an ISR             */
         return (pevent);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     if (pevent->OSEventGrp != 0u) {                        /* See if any tasks waiting on mailbox      */
-        tasks_waiting = OS_TRUE;                           /* Yes                                      */
+        tasks_waiting = MT_TRUE;                           /* Yes                                      */
     } else {
-        tasks_waiting = OS_FALSE;                          /* No                                       */
+        tasks_waiting = MT_FALSE;                          /* No                                       */
     }
     switch (opt) {
-        case OS_DEL_NO_PEND:                               /* Delete mailbox only if no task waiting   */
-             if (tasks_waiting == OS_FALSE) {
-#if OS_EVENT_NAME_EN > 0u
+        case MT_DEL_NO_PEND:                               /* Delete mailbox only if no task waiting   */
+             if (tasks_waiting == MT_FALSE) {
+#if MT_EVENT_NAME_EN > 0u
                  pevent->OSEventName = (INT8U *)(void *)"?";
 #endif
-                 pevent->OSEventType = OS_EVENT_TYPE_UNUSED;
+                 pevent->OSEventType = MT_EVENT_TYPE_UNUSED;
                  pevent->OSEventPtr  = OSEventFreeList;    /* Return Event Control Block to free list  */
                  pevent->OSEventCnt  = 0u;
                  OSEventFreeList     = pevent;             /* Get next free event control block        */
-                 OS_EXIT_CRITICAL();
-                 *perr               = OS_ERR_NONE;
-                 pevent_return       = (OS_EVENT *)0;      /* Mailbox has been deleted                 */
+                 MT_EXIT_CRITICAL();
+                 *perr               = MT_ERR_NONE;
+                 pevent_return       = (MT_EVENT *)0;      /* Mailbox has been deleted                 */
              } else {
-                 OS_EXIT_CRITICAL();
-                 *perr               = OS_ERR_TASK_WAITING;
+                 MT_EXIT_CRITICAL();
+                 *perr               = MT_ERR_TASK_WAITING;
                  pevent_return       = pevent;
              }
              break;
 
-        case OS_DEL_ALWAYS:                                /* Always delete the mailbox                */
+        case MT_DEL_ALWAYS:                                /* Always delete the mailbox                */
              while (pevent->OSEventGrp != 0u) {            /* Ready ALL tasks waiting for mailbox      */
-                 (void)OS_EventTaskRdy(pevent, (void *)0, OS_STAT_MBOX, OS_STAT_PEND_ABORT);
+                 (void)MT_EventTaskRdy(pevent, (void *)0, MT_STAT_MBOX, MT_STAT_PEND_ABORT);
              }
-#if OS_EVENT_NAME_EN > 0u
+#if MT_EVENT_NAME_EN > 0u
              pevent->OSEventName    = (INT8U *)(void *)"?";
 #endif
-             pevent->OSEventType    = OS_EVENT_TYPE_UNUSED;
+             pevent->OSEventType    = MT_EVENT_TYPE_UNUSED;
              pevent->OSEventPtr     = OSEventFreeList;     /* Return Event Control Block to free list  */
              pevent->OSEventCnt     = 0u;
              OSEventFreeList        = pevent;              /* Get next free event control block        */
-             OS_EXIT_CRITICAL();
-             if (tasks_waiting == OS_TRUE) {               /* Reschedule only if task(s) were waiting  */
-                 OS_Sched();                               /* Find highest priority task ready to run  */
+             MT_EXIT_CRITICAL();
+             if (tasks_waiting == MT_TRUE) {               /* Reschedule only if task(s) were waiting  */
+                 MT_Sched();                               /* Find highest priority task ready to run  */
              }
-             *perr         = OS_ERR_NONE;
-             pevent_return = (OS_EVENT *)0;                /* Mailbox has been deleted                 */
+             *perr         = MT_ERR_NONE;
+             pevent_return = (MT_EVENT *)0;                /* Mailbox has been deleted                 */
              break;
 
         default:
-             OS_EXIT_CRITICAL();
-             *perr         = OS_ERR_INVALID_OPT;
+             MT_EXIT_CRITICAL();
+             *perr         = MT_ERR_INVALID_OPT;
              pevent_return = pevent;
              break;
     }
@@ -248,15 +248,15 @@ OS_EVENT  *OSMboxDel (OS_EVENT  *pevent,
 *              perr          is a pointer to where an error message will be deposited.  Possible error
 *                            messages are:
 *
-*                            OS_ERR_NONE         The call was successful and your task received a
+*                            MT_ERR_NONE         The call was successful and your task received a
 *                                                message.
-*                            OS_ERR_TIMEOUT      A message was not received within the specified 'timeout'.
-*                            OS_ERR_PEND_ABORT   The wait on the mailbox was aborted.
-*                            OS_ERR_EVENT_TYPE   Invalid event type
-*                            OS_ERR_PEND_ISR     If you called this function from an ISR and the result
+*                            MT_ERR_TIMEOUT      A message was not received within the specified 'timeout'.
+*                            MT_ERR_PEND_ABORT   The wait on the mailbox was aborted.
+*                            MT_ERR_EVENT_TYPE   Invalid event type
+*                            MT_ERR_PEND_ISR     If you called this function from an ISR and the result
 *                                                would lead to a suspension.
-*                            OS_ERR_PEVENT_NULL  If 'pevent' is a NULL pointer
-*                            OS_ERR_PEND_LOCKED  If you called this function when the scheduler is locked
+*                            MT_ERR_PEVENT_NULL  If 'pevent' is a NULL pointer
+*                            MT_ERR_PEND_LOCKED  If you called this function when the scheduler is locked
 *
 * Returns    : != (void *)0  is a pointer to the message received
 *              == (void *)0  if no message was received or,
@@ -265,83 +265,83 @@ OS_EVENT  *OSMboxDel (OS_EVENT  *pevent,
 *********************************************************************************************************
 */
 /*$PAGE*/
-void  *OSMboxPend (OS_EVENT  *pevent,
+void  *OSMboxPend (MT_EVENT  *pevent,
                    INT32U     timeout,
                    INT8U     *perr)
 {
     void      *pmsg;
-#if OS_CRITICAL_METHOD == 3u                          /* Allocate storage for CPU status register      */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                          /* Allocate storage for CPU status register      */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#ifdef OS_SAFETY_CRITICAL
+#ifdef MT_SAFETY_CRITICAL
     if (perr == (INT8U *)0) {
-        OS_SAFETY_CRITICAL_EXCEPTION();
+        MT_SAFETY_CRITICAL_EXCEPTION();
         return ((void *)0);
     }
 #endif
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                    /* Validate 'pevent'                             */
-        *perr = OS_ERR_PEVENT_NULL;
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                    /* Validate 'pevent'                             */
+        *perr = MT_ERR_PEVENT_NULL;
         return ((void *)0);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {  /* Validate event block type                     */
-        *perr = OS_ERR_EVENT_TYPE;
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {  /* Validate event block type                     */
+        *perr = MT_ERR_EVENT_TYPE;
         return ((void *)0);
     }
     if (OSIntNesting > 0u) {                          /* See if called from ISR ...                    */
-        *perr = OS_ERR_PEND_ISR;                      /* ... can't PEND from an ISR                    */
+        *perr = MT_ERR_PEND_ISR;                      /* ... can't PEND from an ISR                    */
         return ((void *)0);
     }
     if (OSLockNesting > 0u) {                         /* See if called with scheduler locked ...       */
-        *perr = OS_ERR_PEND_LOCKED;                   /* ... can't PEND when locked                    */
+        *perr = MT_ERR_PEND_LOCKED;                   /* ... can't PEND when locked                    */
         return ((void *)0);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     pmsg = pevent->OSEventPtr;
     if (pmsg != (void *)0) {                          /* See if there is already a message             */
         pevent->OSEventPtr = (void *)0;               /* Clear the mailbox                             */
-        OS_EXIT_CRITICAL();
-        *perr = OS_ERR_NONE;
+        MT_EXIT_CRITICAL();
+        *perr = MT_ERR_NONE;
         return (pmsg);                                /* Return the message received (or NULL)         */
     }
-    OSTCBCur->OSTCBStat     |= OS_STAT_MBOX;          /* Message not available, task will pend         */
-    OSTCBCur->OSTCBStatPend  = OS_STAT_PEND_OK;
+    OSTCBCur->OSTCBStat     |= MT_STAT_MBOX;          /* Message not available, task will pend         */
+    OSTCBCur->OSTCBStatPend  = MT_STAT_PEND_OK;
     OSTCBCur->OSTCBDly       = timeout;               /* Load timeout in TCB                           */
-    OS_EventTaskWait(pevent);                         /* Suspend task until event or timeout occurs    */
-    OS_EXIT_CRITICAL();
-    OS_Sched();                                       /* Find next highest priority task ready to run  */
-    OS_ENTER_CRITICAL();
+    MT_EventTaskWait(pevent);                         /* Suspend task until event or timeout occurs    */
+    MT_EXIT_CRITICAL();
+    MT_Sched();                                       /* Find next highest priority task ready to run  */
+    MT_ENTER_CRITICAL();
     switch (OSTCBCur->OSTCBStatPend) {                /* See if we timed-out or aborted                */
-        case OS_STAT_PEND_OK:
+        case MT_STAT_PEND_OK:
              pmsg =  OSTCBCur->OSTCBMsg;
-            *perr =  OS_ERR_NONE;
+            *perr =  MT_ERR_NONE;
              break;
 
-        case OS_STAT_PEND_ABORT:
+        case MT_STAT_PEND_ABORT:
              pmsg = (void *)0;
-            *perr =  OS_ERR_PEND_ABORT;               /* Indicate that we aborted                      */
+            *perr =  MT_ERR_PEND_ABORT;               /* Indicate that we aborted                      */
              break;
 
-        case OS_STAT_PEND_TO:
+        case MT_STAT_PEND_TO:
         default:
-             OS_EventTaskRemove(OSTCBCur, pevent);
+             MT_EventTaskRemove(OSTCBCur, pevent);
              pmsg = (void *)0;
-            *perr =  OS_ERR_TIMEOUT;                  /* Indicate that we didn't get event within TO   */
+            *perr =  MT_ERR_TIMEOUT;                  /* Indicate that we didn't get event within TO   */
              break;
     }
-    OSTCBCur->OSTCBStat          =  OS_STAT_RDY;      /* Set   task  status to ready                   */
-    OSTCBCur->OSTCBStatPend      =  OS_STAT_PEND_OK;  /* Clear pend  status                            */
-    OSTCBCur->OSTCBEventPtr      = (OS_EVENT  *)0;    /* Clear event pointers                          */
-#if (OS_EVENT_MULTI_EN > 0u)
-    OSTCBCur->OSTCBEventMultiPtr = (OS_EVENT **)0;
+    OSTCBCur->OSTCBStat          =  MT_STAT_RDY;      /* Set   task  status to ready                   */
+    OSTCBCur->OSTCBStatPend      =  MT_STAT_PEND_OK;  /* Clear pend  status                            */
+    OSTCBCur->OSTCBEventPtr      = (MT_EVENT  *)0;    /* Clear event pointers                          */
+#if (MT_EVENT_MULTI_EN > 0u)
+    OSTCBCur->OSTCBEventMultiPtr = (MT_EVENT **)0;
 #endif
     OSTCBCur->OSTCBMsg           = (void      *)0;    /* Clear  received message                       */
-    OS_EXIT_CRITICAL();
+    MT_EXIT_CRITICAL();
     return (pmsg);                                    /* Return received message                       */
 }
 /*$PAGE*/
@@ -356,80 +356,80 @@ void  *OSMboxPend (OS_EVENT  *pevent,
 * Arguments  : pevent        is a pointer to the event control block associated with the desired mailbox.
 *
 *              opt           determines the type of ABORT performed:
-*                            OS_PEND_OPT_NONE         ABORT wait for a single task (HPT) waiting on the
+*                            MT_PEND_OPT_NONE         ABORT wait for a single task (HPT) waiting on the
 *                                                     mailbox
-*                            OS_PEND_OPT_BROADCAST    ABORT wait for ALL tasks that are  waiting on the
+*                            MT_PEND_OPT_BROADCAST    ABORT wait for ALL tasks that are  waiting on the
 *                                                     mailbox
 *
 *              perr          is a pointer to where an error message will be deposited.  Possible error
 *                            messages are:
 *
-*                            OS_ERR_NONE         No tasks were     waiting on the mailbox.
-*                            OS_ERR_PEND_ABORT   At least one task waiting on the mailbox was readied
+*                            MT_ERR_NONE         No tasks were     waiting on the mailbox.
+*                            MT_ERR_PEND_ABORT   At least one task waiting on the mailbox was readied
 *                                                and informed of the aborted wait; check return value
 *                                                for the number of tasks whose wait on the mailbox
 *                                                was aborted.
-*                            OS_ERR_EVENT_TYPE   If you didn't pass a pointer to a mailbox.
-*                            OS_ERR_PEVENT_NULL  If 'pevent' is a NULL pointer.
+*                            MT_ERR_EVENT_TYPE   If you didn't pass a pointer to a mailbox.
+*                            MT_ERR_PEVENT_NULL  If 'pevent' is a NULL pointer.
 *
 * Returns    : == 0          if no tasks were waiting on the mailbox, or upon error.
 *              >  0          if one or more tasks waiting on the mailbox are now readied and informed.
 *********************************************************************************************************
 */
 
-#if OS_MBOX_PEND_ABORT_EN > 0u
-INT8U  OSMboxPendAbort (OS_EVENT  *pevent,
+#if MT_MBOX_PEND_ABORT_EN > 0u
+INT8U  OSMboxPendAbort (MT_EVENT  *pevent,
                         INT8U      opt,
                         INT8U     *perr)
 {
     INT8U      nbr_tasks;
-#if OS_CRITICAL_METHOD == 3u                               /* Allocate storage for CPU status register */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                               /* Allocate storage for CPU status register */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#ifdef OS_SAFETY_CRITICAL
+#ifdef MT_SAFETY_CRITICAL
     if (perr == (INT8U *)0) {
-        OS_SAFETY_CRITICAL_EXCEPTION();
+        MT_SAFETY_CRITICAL_EXCEPTION();
         return (0u);
     }
 #endif
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                         /* Validate 'pevent'                        */
-        *perr = OS_ERR_PEVENT_NULL;
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                         /* Validate 'pevent'                        */
+        *perr = MT_ERR_PEVENT_NULL;
         return (0u);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {       /* Validate event block type                */
-        *perr = OS_ERR_EVENT_TYPE;
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {       /* Validate event block type                */
+        *perr = MT_ERR_EVENT_TYPE;
         return (0u);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     if (pevent->OSEventGrp != 0u) {                        /* See if any task waiting on mailbox?      */
         nbr_tasks = 0u;
         switch (opt) {
-            case OS_PEND_OPT_BROADCAST:                    /* Do we need to abort ALL waiting tasks?   */
+            case MT_PEND_OPT_BROADCAST:                    /* Do we need to abort ALL waiting tasks?   */
                  while (pevent->OSEventGrp != 0u) {        /* Yes, ready ALL tasks waiting on mailbox  */
-                     (void)OS_EventTaskRdy(pevent, (void *)0, OS_STAT_MBOX, OS_STAT_PEND_ABORT);
+                     (void)MT_EventTaskRdy(pevent, (void *)0, MT_STAT_MBOX, MT_STAT_PEND_ABORT);
                      nbr_tasks++;
                  }
                  break;
 
-            case OS_PEND_OPT_NONE:
+            case MT_PEND_OPT_NONE:
             default:                                       /* No,  ready HPT       waiting on mailbox  */
-                 (void)OS_EventTaskRdy(pevent, (void *)0, OS_STAT_MBOX, OS_STAT_PEND_ABORT);
+                 (void)MT_EventTaskRdy(pevent, (void *)0, MT_STAT_MBOX, MT_STAT_PEND_ABORT);
                  nbr_tasks++;
                  break;
         }
-        OS_EXIT_CRITICAL();
-        OS_Sched();                                        /* Find HPT ready to run                    */
-        *perr = OS_ERR_PEND_ABORT;
+        MT_EXIT_CRITICAL();
+        MT_Sched();                                        /* Find HPT ready to run                    */
+        *perr = MT_ERR_PEND_ABORT;
         return (nbr_tasks);
     }
-    OS_EXIT_CRITICAL();
-    *perr = OS_ERR_NONE;
+    MT_EXIT_CRITICAL();
+    *perr = MT_ERR_NONE;
     return (0u);                                           /* No tasks waiting on mailbox              */
 }
 #endif
@@ -445,54 +445,54 @@ INT8U  OSMboxPendAbort (OS_EVENT  *pevent,
 *
 *              pmsg          is a pointer to the message to send.  You MUST NOT send a NULL pointer.
 *
-* Returns    : OS_ERR_NONE          The call was successful and the message was sent
-*              OS_ERR_MBOX_FULL     If the mailbox already contains a message.  You can can only send one
+* Returns    : MT_ERR_NONE          The call was successful and the message was sent
+*              MT_ERR_MBOX_FULL     If the mailbox already contains a message.  You can can only send one
 *                                   message at a time and thus, the message MUST be consumed before you
 *                                   are allowed to send another one.
-*              OS_ERR_EVENT_TYPE    If you are attempting to post to a non mailbox.
-*              OS_ERR_PEVENT_NULL   If 'pevent' is a NULL pointer
-*              OS_ERR_POST_NULL_PTR If you are attempting to post a NULL pointer
+*              MT_ERR_EVENT_TYPE    If you are attempting to post to a non mailbox.
+*              MT_ERR_PEVENT_NULL   If 'pevent' is a NULL pointer
+*              MT_ERR_POST_NULL_PTR If you are attempting to post a NULL pointer
 *
 * Note(s)    : 1) HPT means Highest Priority Task
 *********************************************************************************************************
 */
 
-#if OS_MBOX_POST_EN > 0u
-INT8U  OSMboxPost (OS_EVENT  *pevent,
+#if MT_MBOX_POST_EN > 0u
+INT8U  OSMboxPost (MT_EVENT  *pevent,
                    void      *pmsg)
 {
-#if OS_CRITICAL_METHOD == 3u                          /* Allocate storage for CPU status register      */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                          /* Allocate storage for CPU status register      */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                    /* Validate 'pevent'                             */
-        return (OS_ERR_PEVENT_NULL);
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                    /* Validate 'pevent'                             */
+        return (MT_ERR_PEVENT_NULL);
     }
     if (pmsg == (void *)0) {                          /* Make sure we are not posting a NULL pointer   */
-        return (OS_ERR_POST_NULL_PTR);
+        return (MT_ERR_POST_NULL_PTR);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {  /* Validate event block type                     */
-        return (OS_ERR_EVENT_TYPE);
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {  /* Validate event block type                     */
+        return (MT_ERR_EVENT_TYPE);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     if (pevent->OSEventGrp != 0u) {                   /* See if any task pending on mailbox            */
                                                       /* Ready HPT waiting on event                    */
-        (void)OS_EventTaskRdy(pevent, pmsg, OS_STAT_MBOX, OS_STAT_PEND_OK);
-        OS_EXIT_CRITICAL();
-        OS_Sched();                                   /* Find highest priority task ready to run       */
-        return (OS_ERR_NONE);
+        (void)MT_EventTaskRdy(pevent, pmsg, MT_STAT_MBOX, MT_STAT_PEND_OK);
+        MT_EXIT_CRITICAL();
+        MT_Sched();                                   /* Find highest priority task ready to run       */
+        return (MT_ERR_NONE);
     }
     if (pevent->OSEventPtr != (void *)0) {            /* Make sure mailbox doesn't already have a msg  */
-        OS_EXIT_CRITICAL();
-        return (OS_ERR_MBOX_FULL);
+        MT_EXIT_CRITICAL();
+        return (MT_ERR_MBOX_FULL);
     }
     pevent->OSEventPtr = pmsg;                        /* Place message in mailbox                      */
-    OS_EXIT_CRITICAL();
-    return (OS_ERR_NONE);
+    MT_EXIT_CRITICAL();
+    return (MT_ERR_NONE);
 }
 #endif
 
@@ -508,19 +508,19 @@ INT8U  OSMboxPost (OS_EVENT  *pevent,
 *              pmsg          is a pointer to the message to send.  You MUST NOT send a NULL pointer.
 *
 *              opt           determines the type of POST performed:
-*                            OS_POST_OPT_NONE         POST to a single waiting task
+*                            MT_POST_OPT_NONE         POST to a single waiting task
 *                                                     (Identical to OSMboxPost())
-*                            OS_POST_OPT_BROADCAST    POST to ALL tasks that are waiting on the mailbox
+*                            MT_POST_OPT_BROADCAST    POST to ALL tasks that are waiting on the mailbox
 *
-*                            OS_POST_OPT_NO_SCHED     Indicates that the scheduler will NOT be invoked
+*                            MT_POST_OPT_NO_SCHED     Indicates that the scheduler will NOT be invoked
 *
-* Returns    : OS_ERR_NONE          The call was successful and the message was sent
-*              OS_ERR_MBOX_FULL     If the mailbox already contains a message.  You can can only send one
+* Returns    : MT_ERR_NONE          The call was successful and the message was sent
+*              MT_ERR_MBOX_FULL     If the mailbox already contains a message.  You can can only send one
 *                                   message at a time and thus, the message MUST be consumed before you
 *                                   are allowed to send another one.
-*              OS_ERR_EVENT_TYPE    If you are attempting to post to a non mailbox.
-*              OS_ERR_PEVENT_NULL   If 'pevent' is a NULL pointer
-*              OS_ERR_POST_NULL_PTR If you are attempting to post a NULL pointer
+*              MT_ERR_EVENT_TYPE    If you are attempting to post to a non mailbox.
+*              MT_ERR_PEVENT_NULL   If 'pevent' is a NULL pointer
+*              MT_ERR_POST_NULL_PTR If you are attempting to post a NULL pointer
 *
 * Note(s)    : 1) HPT means Highest Priority Task
 *
@@ -529,50 +529,50 @@ INT8U  OSMboxPost (OS_EVENT  *pevent,
 *********************************************************************************************************
 */
 
-#if OS_MBOX_POST_OPT_EN > 0u
-INT8U  OSMboxPostOpt (OS_EVENT  *pevent,
+#if MT_MBOX_POST_OPT_EN > 0u
+INT8U  OSMboxPostOpt (MT_EVENT  *pevent,
                       void      *pmsg,
                       INT8U      opt)
 {
-#if OS_CRITICAL_METHOD == 3u                          /* Allocate storage for CPU status register      */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                          /* Allocate storage for CPU status register      */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                    /* Validate 'pevent'                             */
-        return (OS_ERR_PEVENT_NULL);
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                    /* Validate 'pevent'                             */
+        return (MT_ERR_PEVENT_NULL);
     }
     if (pmsg == (void *)0) {                          /* Make sure we are not posting a NULL pointer   */
-        return (OS_ERR_POST_NULL_PTR);
+        return (MT_ERR_POST_NULL_PTR);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {  /* Validate event block type                     */
-        return (OS_ERR_EVENT_TYPE);
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {  /* Validate event block type                     */
+        return (MT_ERR_EVENT_TYPE);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     if (pevent->OSEventGrp != 0u) {                   /* See if any task pending on mailbox            */
-        if ((opt & OS_POST_OPT_BROADCAST) != 0x00u) { /* Do we need to post msg to ALL waiting tasks ? */
+        if ((opt & MT_POST_OPT_BROADCAST) != 0x00u) { /* Do we need to post msg to ALL waiting tasks ? */
             while (pevent->OSEventGrp != 0u) {        /* Yes, Post to ALL tasks waiting on mailbox     */
-                (void)OS_EventTaskRdy(pevent, pmsg, OS_STAT_MBOX, OS_STAT_PEND_OK);
+                (void)MT_EventTaskRdy(pevent, pmsg, MT_STAT_MBOX, MT_STAT_PEND_OK);
             }
         } else {                                      /* No,  Post to HPT waiting on mbox              */
-            (void)OS_EventTaskRdy(pevent, pmsg, OS_STAT_MBOX, OS_STAT_PEND_OK);
+            (void)MT_EventTaskRdy(pevent, pmsg, MT_STAT_MBOX, MT_STAT_PEND_OK);
         }
-        OS_EXIT_CRITICAL();
-        if ((opt & OS_POST_OPT_NO_SCHED) == 0u) {     /* See if scheduler needs to be invoked          */
-            OS_Sched();                               /* Find HPT ready to run                         */
+        MT_EXIT_CRITICAL();
+        if ((opt & MT_POST_OPT_NO_SCHED) == 0u) {     /* See if scheduler needs to be invoked          */
+            MT_Sched();                               /* Find HPT ready to run                         */
         }
-        return (OS_ERR_NONE);
+        return (MT_ERR_NONE);
     }
     if (pevent->OSEventPtr != (void *)0) {            /* Make sure mailbox doesn't already have a msg  */
-        OS_EXIT_CRITICAL();
-        return (OS_ERR_MBOX_FULL);
+        MT_EXIT_CRITICAL();
+        return (MT_ERR_MBOX_FULL);
     }
     pevent->OSEventPtr = pmsg;                        /* Place message in mailbox                      */
-    OS_EXIT_CRITICAL();
-    return (OS_ERR_NONE);
+    MT_EXIT_CRITICAL();
+    return (MT_ERR_NONE);
 }
 #endif
 
@@ -588,48 +588,48 @@ INT8U  OSMboxPostOpt (OS_EVENT  *pevent,
 *              p_mbox_data   is a pointer to a structure that will contain information about the message
 *                            mailbox.
 *
-* Returns    : OS_ERR_NONE         The call was successful and the message was sent
-*              OS_ERR_EVENT_TYPE   If you are attempting to obtain data from a non mailbox.
-*              OS_ERR_PEVENT_NULL  If 'pevent'      is a NULL pointer
-*              OS_ERR_PDATA_NULL   If 'p_mbox_data' is a NULL pointer
+* Returns    : MT_ERR_NONE         The call was successful and the message was sent
+*              MT_ERR_EVENT_TYPE   If you are attempting to obtain data from a non mailbox.
+*              MT_ERR_PEVENT_NULL  If 'pevent'      is a NULL pointer
+*              MT_ERR_PDATA_NULL   If 'p_mbox_data' is a NULL pointer
 *********************************************************************************************************
 */
 
-#if OS_MBOX_QUERY_EN > 0u
-INT8U  OSMboxQuery (OS_EVENT      *pevent,
-                    OS_MBOX_DATA  *p_mbox_data)
+#if MT_MBOX_QUERY_EN > 0u
+INT8U  OSMboxQuery (MT_EVENT      *pevent,
+                    MT_MBOX_DATA  *p_mbox_data)
 {
     INT8U       i;
-    OS_PRIO    *psrc;
-    OS_PRIO    *pdest;
-#if OS_CRITICAL_METHOD == 3u                               /* Allocate storage for CPU status register */
-    OS_CPU_SR   cpu_sr = 0u;
+    MT_PRIO    *psrc;
+    MT_PRIO    *pdest;
+#if MT_CRITICAL_METHOD == 3u                               /* Allocate storage for CPU status register */
+    MT_CPU_SR   cpu_sr = 0u;
 #endif
 
 
 
-#if OS_ARG_CHK_EN > 0u
-    if (pevent == (OS_EVENT *)0) {                         /* Validate 'pevent'                        */
-        return (OS_ERR_PEVENT_NULL);
+#if MT_ARG_CHK_EN > 0u
+    if (pevent == (MT_EVENT *)0) {                         /* Validate 'pevent'                        */
+        return (MT_ERR_PEVENT_NULL);
     }
-    if (p_mbox_data == (OS_MBOX_DATA *)0) {                /* Validate 'p_mbox_data'                   */
-        return (OS_ERR_PDATA_NULL);
+    if (p_mbox_data == (MT_MBOX_DATA *)0) {                /* Validate 'p_mbox_data'                   */
+        return (MT_ERR_PDATA_NULL);
     }
 #endif
-    if (pevent->OSEventType != OS_EVENT_TYPE_MBOX) {       /* Validate event block type                */
-        return (OS_ERR_EVENT_TYPE);
+    if (pevent->OSEventType != MT_EVENT_TYPE_MBOX) {       /* Validate event block type                */
+        return (MT_ERR_EVENT_TYPE);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     p_mbox_data->OSEventGrp = pevent->OSEventGrp;          /* Copy message mailbox wait list           */
     psrc                    = &pevent->OSEventTbl[0];
     pdest                   = &p_mbox_data->OSEventTbl[0];
-    for (i = 0u; i < OS_EVENT_TBL_SIZE; i++) {
+    for (i = 0u; i < MT_EVENT_TBL_SIZE; i++) {
         *pdest++ = *psrc++;
     }
     p_mbox_data->OSMsg = pevent->OSEventPtr;               /* Get message from mailbox                 */
-    OS_EXIT_CRITICAL();
-    return (OS_ERR_NONE);
+    MT_EXIT_CRITICAL();
+    return (MT_ERR_NONE);
 }
-#endif                                                     /* OS_MBOX_QUERY_EN                         */
-#endif                                                     /* OS_MBOX_EN                               */
+#endif                                                     /* MT_MBOX_QUERY_EN                         */
+#endif                                                     /* MT_MBOX_EN                               */
 #endif //BAS_TEMP

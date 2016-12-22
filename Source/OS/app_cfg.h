@@ -29,7 +29,7 @@
 #define APP_TASK_5_PRIO         15
 #define APP_TASK_6_PRIO         16
 
-#define OS_TASK_TMR_PRIO        8
+#define MT_TASK_TMR_PRIO        8
 
 
 /*

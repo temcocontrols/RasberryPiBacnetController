@@ -2,7 +2,7 @@
 
 #define  MT_SOURCE
 
-#ifndef  OS_MASTER_FILE
+#ifndef  MT_MASTER_FILE
 #include "mt.h"
 #endif
 
@@ -25,8 +25,8 @@
 void  OSTimeDly (INT32U ticks)
 {
     INT8U      y;
-#if OS_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
@@ -38,15 +38,15 @@ void  OSTimeDly (INT32U ticks)
         return;
     }
     if (ticks > 0u) {                            /* 0 means no delay!                                  */
-        OS_ENTER_CRITICAL();
+        MT_ENTER_CRITICAL();
         y            =  OSTCBCur->OSTCBY;        /* Delay current task                                 */
-        OSRdyTbl[y] &= (OS_PRIO)~OSTCBCur->OSTCBBitX;
+        OSRdyTbl[y] &= (MT_PRIO)~OSTCBCur->OSTCBBitX;
         if (OSRdyTbl[y] == 0u) {
-            OSRdyGrp &= (OS_PRIO)~OSTCBCur->OSTCBBitY;
+            OSRdyGrp &= (MT_PRIO)~OSTCBCur->OSTCBBitY;
         }
         OSTCBCur->OSTCBDly = ticks;              /* Load ticks in TCB                                  */
-        OS_EXIT_CRITICAL();
-        OS_Sched();                              /* Find next task to run!                             */
+        MT_EXIT_CRITICAL();
+        MT_Sched();                              /* Find next task to run!                             */
     }
 }
 /*$PAGE*/
@@ -63,12 +63,12 @@ void  OSTimeDly (INT32U ticks)
 *              seconds   specifies the number of seconds (max. 59)
 *              ms        specifies the number of milliseconds (max. 999)
 *
-* Returns    : OS_ERR_NONE
-*              OS_ERR_TIME_INVALID_MINUTES
-*              OS_ERR_TIME_INVALID_SECONDS
-*              OS_ERR_TIME_INVALID_MS
-*              OS_ERR_TIME_ZERO_DLY
-*              OS_ERR_TIME_DLY_ISR
+* Returns    : MT_ERR_NONE
+*              MT_ERR_TIME_INVALID_MINUTES
+*              MT_ERR_TIME_INVALID_SECONDS
+*              MT_ERR_TIME_INVALID_MS
+*              MT_ERR_TIME_ZERO_DLY
+*              MT_ERR_TIME_DLY_ISR
 *
 * Note(s)    : The resolution on the milliseconds depends on the tick rate.  For example, you can't do
 *              a 10 mS delay if the ticker interrupts every 100 mS.  In this case, the delay would be
@@ -76,7 +76,7 @@ void  OSTimeDly (INT32U ticks)
 *********************************************************************************************************
 */
 
-#if OS_TIME_DLY_HMSM_EN > 0u
+#if MT_TIME_DLY_HMSM_EN > 0u
 INT8U  OSTimeDlyHMSM (INT8U   hours,
                       INT8U   minutes,
                       INT8U   seconds,
@@ -86,37 +86,37 @@ INT8U  OSTimeDlyHMSM (INT8U   hours,
 
 
     if (OSIntNesting > 0u) {                     /* See if trying to call from an ISR                  */
-        return (OS_ERR_TIME_DLY_ISR);
+        return (MT_ERR_TIME_DLY_ISR);
     }
     if (OSLockNesting > 0u) {                    /* See if called with scheduler locked                */
-        return (OS_ERR_SCHED_LOCKED);
+        return (MT_ERR_SCHED_LOCKED);
     }
-#if OS_ARG_CHK_EN > 0u
+#if MT_ARG_CHK_EN > 0u
     if (hours == 0u) {
         if (minutes == 0u) {
             if (seconds == 0u) {
                 if (ms == 0u) {
-                    return (OS_ERR_TIME_ZERO_DLY);
+                    return (MT_ERR_TIME_ZERO_DLY);
                 }
             }
         }
     }
     if (minutes > 59u) {
-        return (OS_ERR_TIME_INVALID_MINUTES);    /* Validate arguments to be within range              */
+        return (MT_ERR_TIME_INVALID_MINUTES);    /* Validate arguments to be within range              */
     }
     if (seconds > 59u) {
-        return (OS_ERR_TIME_INVALID_SECONDS);
+        return (MT_ERR_TIME_INVALID_SECONDS);
     }
     if (ms > 999u) {
-        return (OS_ERR_TIME_INVALID_MS);
+        return (MT_ERR_TIME_INVALID_MS);
     }
 #endif
                                                  /* Compute the total number of clock ticks required.. */
                                                  /* .. (rounded to the nearest tick)                   */
-    ticks = ((INT32U)hours * 3600uL + (INT32U)minutes * 60uL + (INT32U)seconds) * OS_TICKS_PER_SEC
-          + OS_TICKS_PER_SEC * ((INT32U)ms + 500uL / OS_TICKS_PER_SEC) / 1000uL;
+    ticks = ((INT32U)hours * 3600uL + (INT32U)minutes * 60uL + (INT32U)seconds) * MT_TICKS_PER_SEC
+          + MT_TICKS_PER_SEC * ((INT32U)ms + 500uL / MT_TICKS_PER_SEC) / 1000uL;
     OSTimeDly(ticks);
-    return (OS_ERR_NONE);
+    return (MT_ERR_NONE);
 }
 #endif
 /*$PAGE*/
@@ -131,58 +131,58 @@ INT8U  OSTimeDlyHMSM (INT8U   hours,
 *
 * Arguments  : prio                      specifies the priority of the task to resume
 *
-* Returns    : OS_ERR_NONE               Task has been resumed
-*              OS_ERR_PRIO_INVALID       if the priority you specify is higher that the maximum allowed
-*                                        (i.e. >= OS_LOWEST_PRIO)
-*              OS_ERR_TIME_NOT_DLY       Task is not waiting for time to expire
-*              OS_ERR_TASK_NOT_EXIST     The desired task has not been created or has been assigned to a Mutex.
+* Returns    : MT_ERR_NONE               Task has been resumed
+*              MT_ERR_PRIO_INVALID       if the priority you specify is higher that the maximum allowed
+*                                        (i.e. >= MT_LOWEST_PRIO)
+*              MT_ERR_TIME_NOT_DLY       Task is not waiting for time to expire
+*              MT_ERR_TASK_NOT_EXIST     The desired task has not been created or has been assigned to a Mutex.
 *********************************************************************************************************
 */
 
-#if OS_TIME_DLY_RESUME_EN > 0u
+#if MT_TIME_DLY_RESUME_EN > 0u
 INT8U  OSTimeDlyResume (INT8U prio)
 {
-    OS_TCB    *ptcb;
-#if OS_CRITICAL_METHOD == 3u                                   /* Storage for CPU status register      */
-    OS_CPU_SR  cpu_sr = 0u;
+    MT_TCB    *ptcb;
+#if MT_CRITICAL_METHOD == 3u                                   /* Storage for CPU status register      */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-    if (prio >= OS_LOWEST_PRIO) {
-        return (OS_ERR_PRIO_INVALID);
+    if (prio >= MT_LOWEST_PRIO) {
+        return (MT_ERR_PRIO_INVALID);
     }
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     ptcb = OSTCBPrioTbl[prio];                                 /* Make sure that task exist            */
-    if (ptcb == (OS_TCB *)0) {
-        OS_EXIT_CRITICAL();
-        return (OS_ERR_TASK_NOT_EXIST);                        /* The task does not exist              */
+    if (ptcb == (MT_TCB *)0) {
+        MT_EXIT_CRITICAL();
+        return (MT_ERR_TASK_NOT_EXIST);                        /* The task does not exist              */
     }
-    if (ptcb == OS_TCB_RESERVED) {
-        OS_EXIT_CRITICAL();
-        return (OS_ERR_TASK_NOT_EXIST);                        /* The task does not exist              */
+    if (ptcb == MT_TCB_RESERVED) {
+        MT_EXIT_CRITICAL();
+        return (MT_ERR_TASK_NOT_EXIST);                        /* The task does not exist              */
     }
     if (ptcb->OSTCBDly == 0u) {                                /* See if task is delayed               */
-        OS_EXIT_CRITICAL();
-        return (OS_ERR_TIME_NOT_DLY);                          /* Indicate that task was not delayed   */
+        MT_EXIT_CRITICAL();
+        return (MT_ERR_TIME_NOT_DLY);                          /* Indicate that task was not delayed   */
     }
 
     ptcb->OSTCBDly = 0u;                                       /* Clear the time delay                 */
-    if ((ptcb->OSTCBStat & OS_STAT_PEND_ANY) != OS_STAT_RDY) {
-        ptcb->OSTCBStat     &= ~OS_STAT_PEND_ANY;              /* Yes, Clear status flag               */
-        ptcb->OSTCBStatPend  =  OS_STAT_PEND_TO;               /* Indicate PEND timeout                */
+    if ((ptcb->OSTCBStat & MT_STAT_PEND_ANY) != MT_STAT_RDY) {
+        ptcb->OSTCBStat     &= ~MT_STAT_PEND_ANY;              /* Yes, Clear status flag               */
+        ptcb->OSTCBStatPend  =  MT_STAT_PEND_TO;               /* Indicate PEND timeout                */
     } else {
-        ptcb->OSTCBStatPend  =  OS_STAT_PEND_OK;
+        ptcb->OSTCBStatPend  =  MT_STAT_PEND_OK;
     }
-    if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) == OS_STAT_RDY) {  /* Is task suspended?                   */
+    if ((ptcb->OSTCBStat & MT_STAT_SUSPEND) == MT_STAT_RDY) {  /* Is task suspended?                   */
         OSRdyGrp               |= ptcb->OSTCBBitY;             /* No,  Make ready                      */
         OSRdyTbl[ptcb->OSTCBY] |= ptcb->OSTCBBitX;
-        OS_EXIT_CRITICAL();
-        OS_Sched();                                            /* See if this is new highest priority  */
+        MT_EXIT_CRITICAL();
+        MT_Sched();                                            /* See if this is new highest priority  */
     } else {
-        OS_EXIT_CRITICAL();                                    /* Task may be suspended                */
+        MT_EXIT_CRITICAL();                                    /* Task may be suspended                */
     }
-    return (OS_ERR_NONE);
+    return (MT_ERR_NONE);
 }
 #endif
 /*$PAGE*/
@@ -199,19 +199,19 @@ INT8U  OSTimeDlyResume (INT8U prio)
 *********************************************************************************************************
 */
 
-#if OS_TIME_GET_SET_EN > 0u
+#if MT_TIME_GET_SET_EN > 0u
 INT32U  OSTimeGet (void)
 {
     INT32U     ticks;
-#if OS_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     ticks = OSTime;
-    OS_EXIT_CRITICAL();
+    MT_EXIT_CRITICAL();
     return (ticks);
 }
 #endif
@@ -228,17 +228,17 @@ INT32U  OSTimeGet (void)
 *********************************************************************************************************
 */
 
-#if OS_TIME_GET_SET_EN > 0u
+#if MT_TIME_GET_SET_EN > 0u
 void  OSTimeSet (INT32U ticks)
 {
-#if OS_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
-    OS_CPU_SR  cpu_sr = 0u;
+#if MT_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
+    MT_CPU_SR  cpu_sr = 0u;
 #endif
 
 
 
-    OS_ENTER_CRITICAL();
+    MT_ENTER_CRITICAL();
     OSTime = ticks;
-    OS_EXIT_CRITICAL();
+    MT_EXIT_CRITICAL();
 }
 #endif

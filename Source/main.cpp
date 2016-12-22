@@ -210,7 +210,7 @@ int indts;
 #endif //BAS_TEMP
 
 //------------------------ Remove this sample after testing --------------------------
-#if OS_STK_GROWTH == 1u
+#if MT_STK_GROWTH == 1u
 #define STK_HEAD(size) (size - 1u)
 #else
 #define STK_HEAD(size) (0)
@@ -220,8 +220,8 @@ int indts;
 void MyTask(void *p_arg)
 {
 	char *sTaskName = (char *)p_arg;
-#if OS_CRITICAL_METHOD == 3
-	OS_CPU_SR cpu_sr = 0;
+#if MT_CRITICAL_METHOD == 3
+	MT_CPU_SR cpu_sr = 0;
 #endif
 
 	while (1) {
@@ -231,9 +231,9 @@ void MyTask(void *p_arg)
 		 * must enter critical section
 		 */
 
-		OS_ENTER_CRITICAL();
+		MT_ENTER_CRITICAL();
 		printf("Name: %s\n", sTaskName);
-		OS_EXIT_CRITICAL();
+		MT_EXIT_CRITICAL();
 
 		/* Delay so other tasks may execute. */
 		OSTimeDly(100);
@@ -245,8 +245,8 @@ void MyTask(void *p_arg)
 int main(int argc, char *argv[])
 {
 //------------------------ Remove this sample after testing --------------------------
-#if OS_CRITICAL_METHOD == 3
-	OS_CPU_SR cpu_sr = 0;
+#if MT_CRITICAL_METHOD == 3
+	MT_CPU_SR cpu_sr = 0;
 #endif
 	INT8U err;
 
@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
 			 (void *)&Stk1[STK_HEAD(APP_TASK_1_STK_SIZE)],
 			 APP_TASK_1_PRIO);
 
-	if (err != OS_ERR_NONE) {
+	if (err != MT_ERR_NONE) {
 		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask1,
 		       (int)err);
 	}
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 			 (void *)&Stk2[STK_HEAD(APP_TASK_2_STK_SIZE)],
 			 APP_TASK_2_PRIO);
 
-	if (err != OS_ERR_NONE) {
+	if (err != MT_ERR_NONE) {
 		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask2,
 		       (int)err);
 	}
@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
 			 (void *)&Stk3[STK_HEAD(APP_TASK_3_STK_SIZE)],
 			 APP_TASK_3_PRIO);
 
-	if (err != OS_ERR_NONE) {
+	if (err != MT_ERR_NONE) {
 		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask3,
 		       (int)err);
 	}
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 			 (void *)&Stk4[STK_HEAD(APP_TASK_4_STK_SIZE)],
 			 APP_TASK_4_PRIO);
 
-	if (err != OS_ERR_NONE) {
+	if (err != MT_ERR_NONE) {
 		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask4,
 		       (int)err);
 	}
@@ -314,21 +314,21 @@ int main(int argc, char *argv[])
 			 (void *)&Stk5[STK_HEAD(APP_TASK_5_STK_SIZE)],
 			 APP_TASK_5_PRIO);
 
-	if (err != OS_ERR_NONE) {
+	if (err != MT_ERR_NONE) {
 		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask5,
 		       (int)err);
 	}
 
 
-	OS_ENTER_CRITICAL();
+	MT_ENTER_CRITICAL();
 	printf("all threads created\n");
-	OS_EXIT_CRITICAL();
+	MT_EXIT_CRITICAL();
 
 	OSStart();
 
-	OS_ENTER_CRITICAL();
+	MT_ENTER_CRITICAL();
 	printf("returned from OSStart()\n");
-	OS_EXIT_CRITICAL();
+	MT_EXIT_CRITICAL();
 
 	return 0;
 //------------------------------------------------------------------------------------

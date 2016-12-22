@@ -11,12 +11,12 @@
 #include "mt.h"
 
 
-/* Check OS_VERSION for compatibility with this port */
-#if OS_VERSION < 204
-#error OS_VERSION must be >= 204. This port uses OSTCBInitHook.
+/* Check MT_VERSION for compatibility with this port */
+#if MT_VERSION < 204
+#error MT_VERSION must be >= 204. This port uses OSTCBInitHook.
 #endif
 
-/*#if OS_CPU_HOOKS_EN > 0
+/*#if MT_CPU_HOOKS_EN > 0
 *********************************************************************************************************
 *                                       GLOBAL VARIABLES
 *********************************************************************************************************
@@ -29,10 +29,10 @@ static int nNumThreadsStarted=0;
 static pthread_cond_t	cvThreadWrapper;
 
 /* Condition variables for all threads. Index for thread is stored in its stack. */
-static pthread_cond_t	grcvThread[ OS_LOWEST_PRIO ];
+static pthread_cond_t	grcvThread[ MT_LOWEST_PRIO ];
 
 /* Array of threads */
-static pthread_t	threadTask[ OS_LOWEST_PRIO ];
+static pthread_t	threadTask[ MT_LOWEST_PRIO ];
 
 /* Context switching control mutex */
 static pthread_mutex_t 	mutThread;
@@ -54,7 +54,7 @@ typedef struct FuncInfoType
 
 int OSMinStkSize(){ return( sizeof( FuncInfo ) ); }
 
-#if OS_SYSTEM_RESET_EN > 0
+#if MT_SYSTEM_RESET_EN > 0
 extern void OSSystemResetHook(void);
 #endif
 
@@ -79,9 +79,9 @@ static void AlarmSigHandler( int signum );
 * Note(s)    : 1) Interrupts are disabled during this call.
 *********************************************************************************************************
 */
-void OSTaskCreateHook(OS_TCB *ptcb)
+void OSTaskCreateHook(MT_TCB *ptcb)
 {
-#if OS_CPU_HOOKS_EN > 0
+#if MT_CPU_HOOKS_EN > 0
 #endif
 }
 
@@ -97,9 +97,9 @@ void OSTaskCreateHook(OS_TCB *ptcb)
 * Note(s)    : 1) Interrupts are disabled during this call.
 *********************************************************************************************************
 */
-void OSTaskDelHook (OS_TCB *ptcb)
+void OSTaskDelHook (MT_TCB *ptcb)
 {
-#if OS_CPU_HOOKS_EN > 0
+#if MT_CPU_HOOKS_EN > 0
 #endif
 }
 
@@ -121,7 +121,7 @@ void OSTaskDelHook (OS_TCB *ptcb)
 */
 void OSTaskSwHook (void)
 {
-#if (OS_CPU_HOOKS_EN > 0)
+#if (MT_CPU_HOOKS_EN > 0)
 #endif
 }
 
@@ -137,7 +137,7 @@ void OSTaskSwHook (void)
 */
 void OSTaskStatHook (void)
 {
-#if (OS_TASK_STAT_HOOK_EN > 0)
+#if (MT_TASK_STAT_HOOK_EN > 0)
 #endif
 }
 
@@ -154,7 +154,7 @@ void OSTaskStatHook (void)
 */
 void OSTimeTickHook (void)
 {
-#if (OS_CPU_HOOKS_EN > 0) && (OS_TIME_TICK_HOOK_EN > 0)
+#if (MT_CPU_HOOKS_EN > 0) && (MT_TIME_TICK_HOOK_EN > 0)
 #endif
 }
 
@@ -169,14 +169,14 @@ void OSTimeTickHook (void)
 */
 void OSInitHookBegin (void)
 {
-#if OS_CPU_HOOKS_EN > 0 && OS_VERSION >= 204
+#if MT_CPU_HOOKS_EN > 0 && MT_VERSION >= 204
     InitLinuxPort();
 #endif
 }
 
 void OSInitHookEnd (void)
 {
-#if OS_CPU_HOOKS_EN > 0 && OS_VERSION >= 204
+#if MT_CPU_HOOKS_EN > 0 && MT_VERSION >= 204
 #endif
 }
 
@@ -193,7 +193,7 @@ void OSInitHookEnd (void)
 */
 void OSTaskIdleHook (void)
 {
-#if OS_CPU_HOOKS_EN > 0 && OS_VERSION >= 251
+#if MT_CPU_HOOKS_EN > 0 && MT_VERSION >= 251
     select(0, NULL, NULL, NULL, NULL);
 #endif
 }
@@ -210,11 +210,11 @@ void OSTaskIdleHook (void)
 * Note(s)    : None.
 *********************************************************************************************************
 */
-void OSTaskReturnHook(OS_TCB *ptcb)
+void OSTaskReturnHook(MT_TCB *ptcb)
 {
-#if OS_CFG_APP_HOOKS_EN > 0u
-	if (OS_AppTaskReturnHookPtr != (OS_APP_HOOK_TCB)0) {
-		(*OS_AppTaskReturnHookPtr)(ptcb);
+#if MT_CFG_APP_HOOKS_EN > 0u
+	if (MT_AppTaskReturnHookPtr != (MT_APP_HOOK_TCB)0) {
+		(*MT_AppTaskReturnHookPtr)(ptcb);
 	}
 #else
 	(void)ptcb;	/* Prevent compiler warning */
@@ -235,13 +235,13 @@ void OSTaskReturnHook(OS_TCB *ptcb)
 *
 *********************************************************************************************************
 */
-OS_STK* OSTaskStkInit (void (*task)(void* pd), void* pdata, OS_STK* ptos, INT16U opt)
+MT_STK* OSTaskStkInit (void (*task)(void* pd), void* pdata, MT_STK* ptos, INT16U opt)
 {
 	FuncInfo* pFuncInfo = (FuncInfo*)((char *)ptos - OSMinStkSize() + 1);
 	pFuncInfo->pFunc = task;
 	pFuncInfo->pArgs = pdata;
 
-	return ((OS_STK*)pFuncInfo);
+	return ((MT_STK*)pFuncInfo);
 }
 
 
@@ -250,14 +250,14 @@ OS_STK* OSTaskStkInit (void (*task)(void* pd), void* pdata, OS_STK* ptos, INT16U
 *                                           System Reset
 *
 * Description: This function can be called by any task and will call the system reset hook function. This
-* hook function should be defined by the application if the flag OS_SYSTEM_RESET_EN is set.
+* hook function should be defined by the application if the flag MT_SYSTEM_RESET_EN is set.
 *
 * Arguments  : none
 *********************************************************************************************************
 */
 void OSSystemReset(void)
 {
-#if OS_SYSTEM_RESET_EN > 0
+#if MT_SYSTEM_RESET_EN > 0
 	/* Stop alarm for system reset */
 	alarm(0);
 
@@ -291,7 +291,7 @@ void OSSystemReset(void)
 void OSStartHighRdy(void)
 {
 	OSTaskSwHook();
-	OSRunning = OS_TRUE;
+	OSRunning = MT_TRUE;
 
 	/* Wait until all task wrappers have started */
 	pthread_mutex_lock (&mutThread);
@@ -406,7 +406,7 @@ static void AlarmSigHandler( int signum )
 */
 static void InitTick()
 {
-   ualarm(1000000/OS_TICKS_PER_SEC, 1000000/OS_TICKS_PER_SEC);
+   ualarm(1000000/MT_TICKS_PER_SEC, 1000000/MT_TICKS_PER_SEC);
 }
 
 /*
@@ -454,14 +454,14 @@ void ThreadWrapper(void* pTaskInfo)
 *                                           OSTCBInitHook
 *
 * Description: Initializes the task by creating a thread for that task. The thread information was stored
-* on the stack during. This Linux port requires OSTCBInitHook and must have OS_VERSION >= 204.
+* on the stack during. This Linux port requires OSTCBInitHook and must have MT_VERSION >= 204.
 *
 * Arguments  :	ptcb	pointer to a task control block. Contains all the info for the task.
 *********************************************************************************************************
 */
-void OSTCBInitHook(OS_TCB *ptcb)
+void OSTCBInitHook(MT_TCB *ptcb)
 {
-#if OS_VERSION >= 204
+#if MT_VERSION >= 204
 	/* Grab task info that was previously stored on task stack */
 	FuncInfo* pFuncInfo = (FuncInfo*)ptcb->OSTCBStkPtr;
 

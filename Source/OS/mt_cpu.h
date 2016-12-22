@@ -1,10 +1,10 @@
 
 
-#ifndef OS_CPU_LINUX_PORT
-#ifdef OS_CPU_GLOBALS
-#define OS_CPU_EXT
+#ifndef MT_CPU_LINUX_PORT
+#ifdef MT_CPU_GLOBALS
+#define MT_CPU_EXT
 #else
-#define OS_CPU_EXT extern
+#define MT_CPU_EXT extern
 #endif
 
 #include <signal.h>
@@ -24,10 +24,10 @@ typedef signed   short int	INT16S;
 typedef unsigned int		INT32U;
 typedef signed   int		INT32S;
 typedef float			FP32;
-typedef INT32U			OS_STK;
-//typedef sigset_t		OS_CPU_SR;
-#ifndef OS_CPU_SR
-#define OS_CPU_SR		sigset_t new_cpu_sr; int
+typedef INT32U			MT_STK;
+//typedef sigset_t		MT_CPU_SR;
+#ifndef MT_CPU_SR
+#define MT_CPU_SR		sigset_t new_cpu_sr; int
 #endif
 
 /*
@@ -36,13 +36,13 @@ typedef INT32U			OS_STK;
 *********************************************************************************************************
 */
 
-#define	OS_CRITICAL_METHOD 3
+#define	MT_CRITICAL_METHOD 3
 
 /* Block interrupts by blocking the alarm signal */
-#define	OS_ENTER_CRITICAL() { cpu_sr = cpu_sr; sigset_t mask; sigemptyset( &mask ); sigaddset( &mask, SIGALRM ); sigprocmask( SIG_SETMASK, &mask, &new_cpu_sr ); }
+#define	MT_ENTER_CRITICAL() { cpu_sr = cpu_sr; sigset_t mask; sigemptyset( &mask ); sigaddset( &mask, SIGALRM ); sigprocmask( SIG_SETMASK, &mask, &new_cpu_sr ); }
 
 /* Unblock the alarm signal */
-#define	OS_EXIT_CRITICAL() { sigprocmask(SIG_SETMASK, &new_cpu_sr, NULL); }
+#define	MT_EXIT_CRITICAL() { sigprocmask(SIG_SETMASK, &new_cpu_sr, NULL); }
 
 /*
 **********************************************************************************************************
@@ -50,9 +50,9 @@ typedef INT32U			OS_STK;
 **********************************************************************************************************
 */
 
-#define	OS_STK_GROWTH		1u					/* Stack grows from HIGH to LOW memory on Linux x86             */
+#define	MT_STK_GROWTH		1u					/* Stack grows from HIGH to LOW memory on Linux x86             */
 
-#define  OS_TASK_SW()         { OSCtxSw(); }                            /* Perform task switch                                      */
+#define  MT_TASK_SW()         { OSCtxSw(); }                            /* Perform task switch                                      */
 
 
 /*
