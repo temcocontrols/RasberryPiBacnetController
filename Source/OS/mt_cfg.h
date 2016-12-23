@@ -26,7 +26,9 @@
 #define MT_SCHED_LOCK_EN          1u   /* Include code for OSSchedLock() and OSSchedUnlock()           */
 
 #define MT_TICK_STEP_EN           1u   /* Enable tick stepping feature for MT-View                  */
-#define MT_TICKS_PER_SEC        100u   /* Set the number of ticks in one second                        */
+//CAUTION: 20 leads to 50 ms tick period. 
+//By default DOS provides 55 ms tick period
+#define MT_TICKS_PER_SEC        20u   /* Set the number of ticks in one second                        */
 
 #define MT_TLS_TBL_SIZE           0u   /* Size of Thread-Local Storage Table                           */
 
@@ -114,7 +116,7 @@
 
 
                                        /* --------------------- TIMER MANAGEMENT --------------------- */
-#define MT_TMR_EN                 0u   /* Enable (1) or Disable (0) code generation for TIMERS         */
+#define MT_TMR_EN                 1u   /* Enable (1) or Disable (0) code generation for TIMERS         */
 #define MT_TMR_CFG_MAX           16u   /*     Maximum number of timers                                 */
 #define MT_TMR_CFG_NAME_EN        1u   /*     Determine timer names                                    */
 #define MT_TMR_CFG_WHEEL_SIZE     7u   /*     Size of timer wheel (#Spokes)                            */

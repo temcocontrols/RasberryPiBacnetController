@@ -152,9 +152,21 @@ void OSTaskStatHook (void)
 * Note(s)    : 1) Interrupts may or may not be ENABLED during this call.
 *********************************************************************************************************
 */
+#if MT_TMR_EN > 0 
+static INT16U OSTmrTickCtr = 0; 
+#endif
+void int8_task_switch();
+
 void OSTimeTickHook (void)
 {
-#if (MT_CPU_HOOKS_EN > 0) && (MT_TIME_TICK_HOOK_EN > 0)
+#if MT_TMR_EN > 0 
+	OSTmrTickCtr++; 
+	int8_task_switch();
+	if (OSTmrTickCtr >= (MT_TICKS_PER_SEC / MT_TMR_CFG_TICKS_PER_SEC)) 
+	{
+		OSTmrTickCtr = 0; 
+		OSTmrSignal(); 
+	} 
 #endif
 }
 

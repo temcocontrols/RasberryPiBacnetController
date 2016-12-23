@@ -215,7 +215,7 @@ int indts;
 #else
 #define STK_HEAD(size) (0)
 #endif
-
+extern unsigned int count_temp;
 /* Function common to all tasks */
 void MyTask(void *p_arg)
 {
@@ -236,12 +236,12 @@ void MyTask(void *p_arg)
 		MT_EXIT_CRITICAL();
 
 		/* Delay so other tasks may execute. */
-		OSTimeDly(100);
+		OSTimeDly(20);
 	}			/* while */
 }
 //--------------------------------------------------------------------
-
 //   /C /G /A /N=networknumber /D=NO
+
 int main(int argc, char *argv[])
 {
 //------------------------ Remove this sample after testing --------------------------
@@ -256,19 +256,11 @@ int main(int argc, char *argv[])
 	 * function information within the port.
 	 */
 	INT8U Stk1[APP_TASK_1_STK_SIZE];
-	INT8U Stk2[APP_TASK_2_STK_SIZE];
-	INT8U Stk3[APP_TASK_3_STK_SIZE];
-	INT8U Stk4[APP_TASK_4_STK_SIZE];
-	INT8U Stk5[APP_TASK_5_STK_SIZE];
 
 	char sTask1[] = "Task 1";
-	char sTask2[] = "Task 2";
-	char sTask3[] = "Task 3";
-	char sTask4[] = "Task 4";
-	char sTask5[] = "Task 5";
 
 	OSInit();
-
+	
 	err =
 	    OSTaskCreate(MyTask, sTask1,
 			 (void *)&Stk1[STK_HEAD(APP_TASK_1_STK_SIZE)],
@@ -279,51 +271,10 @@ int main(int argc, char *argv[])
 		       (int)err);
 	}
 
-	err =
-	    OSTaskCreate(MyTask, sTask2,
-			 (void *)&Stk2[STK_HEAD(APP_TASK_2_STK_SIZE)],
-			 APP_TASK_2_PRIO);
-
-	if (err != MT_ERR_NONE) {
-		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask2,
-		       (int)err);
-	}
-
-	err =
-	    OSTaskCreate(MyTask, sTask3,
-			 (void *)&Stk3[STK_HEAD(APP_TASK_3_STK_SIZE)],
-			 APP_TASK_3_PRIO);
-
-	if (err != MT_ERR_NONE) {
-		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask3,
-		       (int)err);
-	}
-
-	err =
-	    OSTaskCreate(MyTask, sTask4,
-			 (void *)&Stk4[STK_HEAD(APP_TASK_4_STK_SIZE)],
-			 APP_TASK_4_PRIO);
-
-	if (err != MT_ERR_NONE) {
-		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask4,
-		       (int)err);
-	}
-
-	err =
-	    OSTaskCreate(MyTask, sTask5,
-			 (void *)&Stk5[STK_HEAD(APP_TASK_5_STK_SIZE)],
-			 APP_TASK_5_PRIO);
-
-	if (err != MT_ERR_NONE) {
-		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask5,
-		       (int)err);
-	}
-
-
 	MT_ENTER_CRITICAL();
 	printf("all threads created\n");
 	MT_EXIT_CRITICAL();
-
+	
 	OSStart();
 
 	MT_ENTER_CRITICAL();

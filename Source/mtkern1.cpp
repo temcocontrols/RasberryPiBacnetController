@@ -15,6 +15,7 @@
 #include <stdio.h>
 //#include "t3000def.h"
 #include "mtkernel.h"
+#include "mt.h"
 //#include "aio.h"
 //#include "baseclas.h"
 //#include "rs485.h"
@@ -128,19 +129,8 @@ static unsigned pri,i,j;
  * FUNCTION DEFINATIONs
  *****************************************************************************/
 
-/******************************************************************************
- * MT_InitTick
- *
- * Description: 
- * This function starts the alarm interrupt at the appropriate frequency.
- *
- * Arguments  : none
- *****************************************************************************/
-static void MT_InitTick()
-{
-   ualarm(1000000/MT_TICKS_PER_SEC, 1000000/MT_TICKS_PER_SEC);
-}
-
+//PORT: User OS timer to invoke int8_task_switch(). Modify OS TCB to accomodate
+//project's mt kernel tcb
 
 void int8_task_switch()
 {
@@ -466,6 +456,7 @@ void int8_task_switch()
 /* This is the manual task switcher which a program can call to force a task
 switch. It does not decrement any sleeper's sleep counter because a clock tick
 has not occured */
+//PORT: Use OS_Sched()
 void interrupt task_switch( void )
 //void task_switch( void )
 {
@@ -692,77 +683,6 @@ int all_dead( void )
 	return 0;
 }
 
-// Decrement the sleep count of any sleeping tasks.
-
-#ifdef UNUSED_FUNC
-//extern int vrx;
-void check_sleepers( void )
-{
-//	register int i;
-	for( j=0; j<NUM_TASKS; j++ )
-		{
-		 if( tasks[j].status == SLEEPING )
-			{
-			 if( tasks[j].count )
-			 {
-				if( tasks[j].count() <= 0 )
-				 {
-					tasks[j].status = READY;
-					tasks[j].sleep = 0;
-//					vrx = 0;
-				 }
-				else
-				{
-				 tasks[j].sleep--;
-				 if( !tasks[j].sleep ) tasks[j].status = READY;
-				}
-			 }
-			 else
-			 {
-				tasks[j].sleep--;
-				if( !tasks[j].sleep ) tasks[j].status = READY;
-			 }
-			}
-		}
-}
-
-int check_sleepers_all_dead(void)
-{
-	register int j, k;
-	k = 1;
-	for( j=0; j<NUM_TASKS; j++ )
-	{
-		 if( tasks[j].status == SLEEPING )
-		 {
-			tasks[j].sleep--;
-			if( !tasks[j].sleep ) tasks[j].status = READY;
-		 }
-		 else
-		 {
-			if( k )
-			if( tasks[j].status == READY || tasks[j].status == RUNNING ) k = 0;
-		 }
-	}
-	return k;
-}
-
-
-/* Free all stack space. This function should not be called by the user's
- program */
-void free_all( void )
-{
-//	register int i;
-	for( j=0; j<NUM_TASKS; j++ )
-		{
-		 if( tasks[j].stck)
-			{
-//			 free( tasks[j].stck );
-			 tasks[j].stck = NULL;
-			}
-		}
-}
-#endif //UNUSED_FUNC
-
 // Start up the multitasking kernel.
 void interrupt multitask( void )
 //void multitask( void )
@@ -809,31 +729,6 @@ void init_tasks( void )
 
 	 set_vid_mem();
 }
-
-#ifdef UNUSED_FUNC
-// Stop tasking
-void stop_tasking( void )
-{
-	 tasking = 0;
-	 task_switch();
-	 enable();
-}
-
-// Execute only one task
-void mono_task( void )
-{
-	 disable();
-	single_task = 1;
-	 enable();
-}
-
-/* Resume multitasking all tasks. ( Use to restart tasking after a call
-	 to mono_task(). */
-void resume_tasking( void )
-{
-	 single_task = 0;
-}
-#endif //UNUSED_FUNC
 
 // Stop execution of a task for a specified number of clock cycles.
 void msleep( int ticks )
@@ -908,20 +803,7 @@ void resume_suspend( int id_res, int id_susp )
 	resume( id_res );
 	suspend( id_susp );
 }
-#ifdef UNUSED_FUNC
-void blocked( int id )
-{
-	 if( id < 0 || id > NUM_TASKS ) return;
-	 tasks[id].sleep = 0;
-	 tasks[id].status = BLOCKED;
-}
 
-void blocked_suspended( int id )
-{
-	 if( id < 0 || id > NUM_TASKS ) return;
-	 tasks[id].status = SUSPENDED;
-}
-#endif //UNUSED_FUNC
 void blocked_resume( int id )
 {
 	 if( id < 0 || id > NUM_TASKS ) return;
@@ -1025,77 +907,21 @@ int restart( unsigned *sem )
 	  }
 	return 0;
 }
-
-#ifdef UNUSED_FUNC
-/* Display the state of all tasks. This function must NOT be called while
-	 multitasking is in effect. */
-void task_status( void )
-{
-/*
-	 register int i;
-	 if( tasking ) return; // cannot be used while multitasking
-	 printf( "\n" );
-	 for( i=0; i<NUM_TASKS; i++ )
-	{
-	 printf( "Task %d: ", i);
-	 switch( tasks[i].status )
-		{
-		 case READY: printf( "READY\n" ); break;
-		 case RUNNING: printf( "RUNNING\n" ); break;
-		 case BLOCKED: printf( "BLOCKED\n" ); break;
-		 case SUSPENDED: printf( "SUSPENDED\n" ); break;
-		 case SLEEPING: printf( "SLEEPING\n" ); break;
-		 case DEAD: printf( "DEAD\n" ); break;
-		}
-	}
-*/
-}
-#endif //UNUSED_FUNC
 #endif //BAS_TEMP
 
-
-/******************************************************************************
- * HookHandlers
- *
- * Description: 
- * Creates the signal handler for the alarm interrupt. Blocks all alarm 
- * signals, threads will also inherit this blocking when they are created. 
- * Sets up context switching mutex.
- *
- * Arguments:	none
- *****************************************************************************/
- 
 void HookHandlers(void)
 {
-	//setup signal handlers
-	struct sigaction act;
-	sigset_t mask;
-	sigemptyset(&mask);
-
-	act.sa_sigaction = (void (*)(int, siginfo_t*, void*))int8_task_switch;
-	act.sa_flags = 0;
-	act.sa_mask = mask;
-	if ( sigaction(SIGALRM, &act, NULL) )
-	{
-		printf("Sigaction failed for SIGALRM\n" );
-	}
-	
-	//Block all signals in this the main thread. It should not call any signal handler
-	sigset_t set;
-	sigemptyset(&set);
-	sigaddset(&set, SIGALRM);
-	sigprocmask(SIG_BLOCK, &set,  0);
-
-	// Setup context switching mutex
-	//pthread_mutex_init(&mutThread, NULL);
-	//pthread_cond_init (&cvThreadWrapper, NULL);
-	
-	//TBD: Do proper renaming
-	setvectint8 = 1;
+#ifdef BAS_TEMP
+	oldhandler = getvect(8);
+	setvect(8, (void interrupt (*)( ... ))int8_task_switch);
+#endif //BAS_TEMP
+	setvectint8 = 1;	
 }
 
 void UnhookHandlers(void)
 {
+#ifdef BAS_TEMP
 	//  set new vectors
-	//setvect(8, (void interrupt (*)( ... ))oldhandler);
+	setvect(8, (void interrupt (*)( ... ))oldhandler);
+#endif //BAS_TEMP
 }

@@ -13,10 +13,6 @@
  * PREPROCESSOR
  *****************************************************************************/
 
-//CAUTION: 20 leads to 50 ms tick period. 
-//By default DOS provides 55 ms tick period
-#define MT_TICKS_PER_SEC (20)
-
 #define COD386
 
 #ifdef __cplusplus
