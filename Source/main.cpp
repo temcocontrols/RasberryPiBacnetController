@@ -5,20 +5,15 @@
 #include <string.h>
 #include "mt.h"
 #include "app_cfg.h"
+#include "mtkernel.h"
 #ifdef BAS_TEMP
-#include <dos.h>
-#include <mem.h>
-#include <alloc.h>
-#include <conio.h>
 #include <time.h>
 #include <sys\timeb.h>
-#include <bios.h>
 #include <graphics.h>
 #include "mouse.h"
 #include <windows.h>
 #include "aio.h"
 #include "t3000def.h"
-#include "mtkernel.h"
 #include "vga12.h"
 //#include "netbios.h"
 #include "color.hpp"
@@ -174,8 +169,9 @@ real_mode_str real_mode_callback;
 real_mode_str real_mode;
 void (*real_oldHandler)(void);
 
-
+#endif //BAS_TEMP
 task_struct tasks[NUM_TASKS];
+#ifdef BAS_TEMP
 unsigned  read_mon_flag = 0; // i/o semaphore
 unsigned  dos_flag = 0; // i/o semaphore
 unsigned  dos_host = 0;
@@ -186,9 +182,9 @@ unsigned  t3000_flag = 0; // i/o semaphore
 unsigned  print_sem = 0; // i/o semaphore
 
 char far *vid_mem;	// pointer to video memory
-
-unsigned oldss, oldsp;
+#endif //BAS_TEMP
 int tswitch = 0;      		// task index
+#ifdef BAS_TEMP
 //static char tasking = 1;           // tasking system enabled
 //static char single_task = 0;       // single task flag off
 

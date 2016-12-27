@@ -44,6 +44,9 @@ typedef INT32U			MT_STK;
 /* Unblock the alarm signal */
 #define	MT_EXIT_CRITICAL() { sigprocmask(SIG_SETMASK, &new_cpu_sr, NULL); }
 
+#define disable() MT_ENTER_CRITICAL()
+#define enable()  MT_EXIT_CRITICAL()
+
 /*
 **********************************************************************************************************
 *                                          Miscellaneous

@@ -52,6 +52,50 @@ void  OSTimeDly (INT32U ticks)
 /*$PAGE*/
 /*
 *********************************************************************************************************
+*                                        DELAY SPECIFIC TASK 'n' TICKS
+*
+* Description: This function is called to delay execution of the specified task until the
+*              specified number of system ticks expires.  This, of course, directly equates to delaying
+*              the specified task for some time to expire.  No delay will result If the specified delay is
+*              0.  If the specified delay is greater than 0 then, a context switch will result.
+*
+* Arguments  : ticks     is the time delay that the task will be suspended in number of clock 'ticks'.
+*                        Note that by specifying 0, the task will not be delayed.
+*
+* Returns    : none
+*********************************************************************************************************
+*/
+
+void  OSTimeDlyTask (INT8U prio, INT32U ticks)
+{
+    INT8U      y;
+#if MT_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
+    MT_CPU_SR  cpu_sr = 0u;
+#endif
+
+
+
+    if (OSIntNesting > 0u) {                     /* See if trying to call from an ISR                  */
+        return;
+    }
+    if (OSLockNesting > 0u) {                    /* See if called with scheduler locked                */
+        return;
+    }
+    if (ticks > 0u) {                            /* 0 means no delay!                                  */
+        MT_ENTER_CRITICAL();
+        y            =  OSTCBPrioTbl[OSPrioHighRdy]->OSTCBY;        /* Delay current task                                 */
+        OSRdyTbl[y] &= (MT_PRIO)~OSTCBPrioTbl[OSPrioHighRdy]->OSTCBBitX;
+        if (OSRdyTbl[y] == 0u) {
+            OSRdyGrp &= (MT_PRIO)~OSTCBPrioTbl[OSPrioHighRdy]->OSTCBBitY;
+        }
+        OSTCBPrioTbl[OSPrioHighRdy]->OSTCBDly = ticks;              /* Load ticks in TCB                                  */
+        MT_EXIT_CRITICAL();
+        MT_Sched();                              /* Find next task to run!                             */
+    }
+}
+/*$PAGE*/
+/*
+*********************************************************************************************************
 *                                    DELAY TASK FOR SPECIFIED TIME
 *
 * Description: This function is called to delay execution of the currently running task until some time

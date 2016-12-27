@@ -135,19 +135,16 @@ typedef struct {
 
 //#endif
 
-
-#ifdef BAS_TEMP
 typedef struct {
 	task_state status;
-	unsigned   sp;
-	unsigned   ss;
 	unsigned   *pending;
 	int        sleep;
 	unsigned   pri;
 	long       delay_time;
-	PORT_STATUS_variables *ps;
-	} task_struct;
+	//PORT_STATUS_variables *ps;
+} task_struct;
 
+#ifdef BAS_TEMP
 typedef int ( far *taskptr ) (void);
 
 #ifdef MTKERNEL

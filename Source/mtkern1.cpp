@@ -13,9 +13,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
+#include "mt.h"
 //#include "t3000def.h"
 #include "mtkernel.h"
-#include "mt.h"
 //#include "aio.h"
 //#include "baseclas.h"
 //#include "rs485.h"
@@ -99,15 +99,18 @@ extern int miliseclast;
 extern int indarray;
 extern int int_dos;
 extern unsigned real_ss;
+#endif //BAS_TEMP
 extern task_struct tasks[NUM_TASKS];
+#ifdef BAS_TEMP
 extern unsigned  read_mon_flag; // i/o semaphore
 extern unsigned  dos_flag; // i/o semaphore
 extern unsigned  dos_host;
 extern unsigned  screen; // i/o semaphore
 //extern unsigned  memory; // i/o semaphore
 extern unsigned  t3000_flag; // i/o semaphore
-extern unsigned oldss, oldsp;
+#endif //BAS_TEMP
 extern int tswitch;      		// task index
+#ifdef BAS_TEMP
 extern int setvectint8;
 //extern int communication;
 extern char timecount;
@@ -452,228 +455,70 @@ void int8_task_switch()
 #endif //BAS_TEMP
 };
 
-#ifdef BAS_TEMP
 /* This is the manual task switcher which a program can call to force a task
 switch. It does not decrement any sleeper's sleep counter because a clock tick
 has not occured */
 //PORT: Use OS_Sched()
-void interrupt task_switch( void )
+void task_switch( void )
 //void task_switch( void )
 {
-  disable();
+	MT_CPU_SR cpu_sr = 0;
+	disable();
 
-//	asm mov ax, DGROUP
-//	asm mov ds,ax
-
-	tasks[tswitch].ss = _SS;
-	tasks[tswitch].sp = _SP;
 	if( tasks[tswitch].status == RUNNING )
 		tasks[tswitch].status = READY;
 
-/*
-//->
-asm {
-	 //
-	 //
-	 //		tasks[tswitch].ss = _SS;
-	 //
-	mov	bx,word ptr DGROUP:_tswitch
-	imul	bx,bx,24
-	mov	word ptr DGROUP:_tasks[bx+4],ss
-	 //;
-	 //;		tasks[tswitch].sp = _SP;
-	 //;
-	mov	word ptr DGROUP:_tasks[bx+2],sp
-	 //;
-	 //;		if( tasks[tswitch].status == RUNNING )
-	 //;
-	cmp	word ptr DGROUP:_tasks[bx],0
-	jne	short @2@86
-	 //;
-	 //;			tasks[tswitch].status = READY;
-	 //;
-	mov	word ptr DGROUP:_tasks[bx],1
-@2@86:
-}
-//<-
-*/
-
 	tasking=all_dead();
-/*
-	if (i)
-		 tasking = 0;
-*/
+
 	if( !tasking )
 	{
-			disable();
-			_SS = oldss;
-			_SP = oldsp;
-//			setvect( 8, old_int8 );
-			UnhookHandlers();
-//			free_all();
-			enable();
-			return;
+		disable();
+		//			setvect( 8, old_int8 );
+		UnhookHandlers();
+		//			free_all();
+		enable();
+		return;
 	}
+	
 	// find new tasks
 	tswitch++;
-	if( tswitch==NUM_TASKS ) tswitch = 0;
+	if( tswitch==NUM_TASKS ) 
+		tswitch = 0;
 
 	while( tasks[tswitch].status!=READY)
 	{
-		 tswitch++;
-		 if( tswitch==NUM_TASKS ) tswitch = 0;
+		tswitch++;
+		if( tswitch==NUM_TASKS ) 
+			tswitch = 0;
 	}
 	pri = tasks[tswitch].pri;
 
-/*
-//->
-asm {
-	 //		// find new tasks
-	 //;		tswitch++;
-	 //;
-	inc	word ptr DGROUP:_tswitch
-	 //;
-	 //;		if( tswitch==NUM_TASKS ) tswitch = 0;
-	 //;
-	cmp	word ptr DGROUP:_tswitch,22
-	jne	short @2@310
-	jmp	short @2@282
-@2@254:
-	 //;
-	 //;		while( tasks[tswitch].status!=READY)
-	 //;		{
-	 //;			 tswitch++;
-	 //;
-	inc	word ptr DGROUP:_tswitch
-	 //;
-	 //;			 if( tswitch==NUM_TASKS ) tswitch = 0;
-	 //;
-	cmp	word ptr DGROUP:_tswitch,22
-	jne	short @2@310
-@2@282:
-	mov	word ptr DGROUP:_tswitch,0
-@2@310:
-	mov	bx,word ptr DGROUP:_tswitch
-	imul	bx,bx,24
-	cmp	word ptr DGROUP:_tasks[bx],1
-	jne	short @2@254
-	 //;
-	 //;		}
-	 //;
-	 //;		pri = tasks[tswitch].pri;
-	 //;
-	mov	ax,word ptr DGROUP:_tasks[bx+12]
-	mov	word ptr DGROUP:pri,ax
-}
-//<-
-*/
-
 	i=tswitch;
 	j=tswitch+1;
-	if (j ==  NUM_TASKS ) j = 0;
+	
+	if (j ==  NUM_TASKS ) 
+		j = 0;
+	
 	while( j != i )
 	{
-	 if( tasks[j].status == READY && tasks[j].pri > pri  )
-	 {
-		tswitch = j;
-		pri = tasks[tswitch].pri;
-	 }
-	 j++;
-	 if( j == NUM_TASKS ) j = 0;
+		if( tasks[j].status == READY && tasks[j].pri > pri  )
+		{
+			tswitch = j;
+			pri = tasks[tswitch].pri;
+		}
+		j++;
+		if( j == NUM_TASKS ) 
+			j = 0;
 	}
 
-	_SS = tasks[tswitch].ss;
-	_SP = tasks[tswitch].sp;
 	tasks[tswitch].status = RUNNING;
 
-/*
-//->
-asm{
-	 ;
-	 ;		i=tswitch;
-	 ;
-	mov	ax,word ptr DGROUP:_tswitch
-	mov	word ptr DGROUP:i,ax
-	 ;
-	 ;		j=tswitch+1;
-	 ;
-	inc	ax
-	mov	word ptr DGROUP:j,ax
-	 ;
-	 ;		if (j ==  NUM_TASKS ) j = 0;
-	 ;
-	cmp	ax,22
-	jne	short @2@534
-	jmp	short @2@506
-@2@394:
-	 //;
-	 //;		while( j != i )
-	 //;		{
-	 //;		 if( tasks[j].status == READY && tasks[j].pri > pri  )
-	 //;
-	mov	bx,word ptr DGROUP:j
-	imul	bx,bx,24
-	cmp	word ptr DGROUP:_tasks[bx],1
-	jne	short @2@478
-	mov	ax,word ptr DGROUP:_tasks[bx+12]
-	cmp	ax,word ptr DGROUP:pri
-	jbe	short @2@478
-	 //;
-	 //;		 {
-	 //;			tswitch = j;
-	 //;
-	mov	ax,word ptr DGROUP:j
-	mov	word ptr DGROUP:_tswitch,ax
-	 //;
-	 //;			pri = tasks[tswitch].pri;
-	 //;
-	mov	bx,ax
-	imul	bx,bx,24
-	mov	ax,word ptr DGROUP:_tasks[bx+12]
-	mov	word ptr DGROUP:pri,ax
-@2@478:
-	 //;
-	 //;		 }
-	 //;		 j++;
-	 //;
-	inc	word ptr DGROUP:j
-	 //;
-	 //;		 if( j == NUM_TASKS ) j = 0;
-	 //;
-	cmp	word ptr DGROUP:j,22
-	jne	short @2@534
-@2@506:
-	mov	word ptr DGROUP:j,0
-@2@534:
-	mov	ax,word ptr DGROUP:j
-	cmp	ax,word ptr DGROUP:i
-	jne	short @2@394
-	 //;
-	 //;		}
-	 //;
-	 //;		_SS = tasks[tswitch].ss;
-	 //;
-	mov	bx,word ptr DGROUP:_tswitch
-	imul	bx,bx,24
-	 //;
-	 //;		_SP = tasks[tswitch].sp;
-	 //;
-	mov	ss,word ptr DGROUP:_tasks[bx+4]
-	mov	sp,word ptr DGROUP:_tasks[bx+2]
-	 //;
-	 //;		tasks[tswitch].status = RUNNING;
-	 //;
-	mov	word ptr DGROUP:_tasks[bx],0
-}
-//<-
-*/
 	enable();
+
+	MT_Sched();
 }
-//#define byte	unsigned char
-//#define word  unsigned int
 
 // Return 1 if no task are ready to run; 0 if at least one task is READY.
-
 
 int all_dead( void )
 {
@@ -682,7 +527,7 @@ int all_dead( void )
 		if( tasks[j].status == READY || tasks[j].status == RUNNING ) return 1;
 	return 0;
 }
-
+#ifdef BAS_TEMP
 // Start up the multitasking kernel.
 void interrupt multitask( void )
 //void multitask( void )
@@ -703,14 +548,20 @@ void interrupt multitask( void )
 	_SS = tasks[tswitch].ss;
 	enable();
 }
-
+#endif //BAS_TEMP
 // Kill a task. ( i.e., make it's state DEAD. )
 void kill_task( int id )
 {
+	tasks[id].status = DEAD;
+	OSTaskSuspend (id);
+#ifdef BAS_TEMP
+	//TODO: Clear and Unlink OS TCB from TCB list
+	MT_CPU_SR cpu_sr = 0;
 	disable();
 	tasks[id].status = DEAD;
 	enable();
 	task_switch();
+#endif //BAS_TEMP
 }
 
 // Initialize the task control structures
@@ -726,76 +577,35 @@ void init_tasks( void )
 	 tasks[i].pri = i;
 	}
 	 tasks[PROJ].status = DEAD;
-
+#ifdef BAS_TEMP
 	 set_vid_mem();
+#endif //BAS_TEMP
 }
 
 // Stop execution of a task for a specified number of clock cycles.
 void msleep( int ticks )
 {
-	disable();
-	tasks[tswitch].sleep = ticks;
-	if(ticks)
-	 tasks[tswitch].status = SLEEPING;
-	else
-	 tasks[tswitch].status = READY;
-//   enable();
-	 task_switch();
-	 enable();
+	OSTimeDly(ticks);
 }
 
 void msleep( int id, int ticks )
 {
 	if(tasks[id].status==SUSPENDED || tasks[id].status==SLEEPING)
 	{
-	 disable();
-	 tasks[id].sleep = ticks;
-	 tasks[id].status = SLEEPING;
-	 enable();
+		OSTimeDlyTask(id, ticks);
 	}
 }
 
 // Suspend a task until resumed by another task
 void suspend( int id )
 {
-	 if( id < 0 || id > NUM_TASKS ) return;
-//	 disable();      //**************************
-//		asm {
-//			mov ax, 0900h
-//			int 31h
-//		}
-	 disable();
-	 tasks[id].status = SUSPENDED;
-	 if(id==tswitch)
-		 task_switch();
-	 enable();       //*****************************
+	OSTaskSuspend(id);
 }
 
 // Restart a previously suspended task.
 void resume( int id )
 {
-//disable();              //***********************
-//asm {
-//	mov ax, 0900h
-//	int 31h
-// }
-	 if( (id < 0 || id > NUM_TASKS) || (tasks[id].status == DEAD)
-				|| (tasks[id].status == BLOCKED) )
-	 {
-//		asm {
-//			mov ax, 0901h
-//			int 31h
-//		}
-//		enable();           //*************************
-		return;
-	 }
-//	 tasks[id].sleep = 0;
-	 tasks[id].status = READY;
-//asm {
-//	mov ax, 0901h
-//	int 31h
-// }
-// enable();               //******************************
+	OSTaskResume (id);
 }
 
 void resume_suspend( int id_res, int id_susp )
@@ -806,29 +616,24 @@ void resume_suspend( int id_res, int id_susp )
 
 void blocked_resume( int id )
 {
-	 if( id < 0 || id > NUM_TASKS ) return;
+	 if( id < 0 || id > NUM_TASKS ) 
+		 return;
 	 tasks[id].status = READY;
+	 OSTaskResume (id);
 }
 
 // Wait for a semaphore
-void set_semaphore( unsigned *sem )
+void set_semaphore( MT_EVENT *pevent )
 {
-	disable();
-	while( *sem )
-	{
-//			semblock( tswitch, sem );
-			tasks[tswitch].status  = BLOCKED;
-			tasks[tswitch].pending = sem;
-			task_switch();
-			disable(); // task switch will enable interrupts, so they need
-								 //			 to be turned off again
-	}
-	*sem = 1;
-	enable();
+	INT8U     *perr;
+	OSSemPend (pevent, 0, perr);
+	tasks[tswitch].status  = BLOCKED;
 }
+
 
 void set_semaphore_dos(void)
 {
+#ifdef BAS_TEMP
 	 disable();
 /*
 	asm {
@@ -853,61 +658,28 @@ void set_semaphore_dos(void)
 	 dos_flag = 1;
 	 dos_host = tswitch;
 	 enable();
+#endif //BAS_TEMP
 }
 
 // Release a semaphore
 void clear_semaphore_dos(void)
 {
+#ifdef BAS_TEMP
 	disable();
 	tasks[tswitch].pending = NULL;
 	dos_flag = 0;
 	if( restart( &dos_flag ) )
 		task_switch();
 	enable();
+#endif //BAS_TEMP
 }
 
 // Release a semaphore
-void clear_semaphore( unsigned *sem )
+void clear_semaphore(MT_EVENT *pevent)
 {
-	disable();
-	tasks[tswitch].pending = NULL;
-	*sem = 0;
-	if( restart( sem ) )
-		task_switch();
-	enable();
+	OSSemPost (pevent);
+	tasks[tswitch].status  = READY;
 }
-
-/* Set task to BLOCKED. This is an internal function not to be called
-	 by user's program. */
-void semblock( int id, unsigned *sem )
-{
-		 tasks[id].status = BLOCKED;
-		 tasks[id].pending = sem;
-}
-
-/* Restart a task that is waiting for the specified semaphore. This is
-	 an internal function not to be called by user's program */
-int restart( unsigned *sem )
-{
-	register int j;
-	task_struct *ts;
-	ts = &tasks[NUM_TASKS-1];
-	for( j=NUM_TASKS-1; j>=0; j--, ts-- )
-	  if( ts->pending == sem )
-	  {
-		 ts->pending = NULL;
-		 if( ts->status == BLOCKED )
-		 {
-			if(!ts->sleep)
-				ts->status = READY;
-			else
-				ts->status = SLEEPING;
-		 }
-		 return 1;
-	  }
-	return 0;
-}
-#endif //BAS_TEMP
 
 void HookHandlers(void)
 {

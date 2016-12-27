@@ -1182,6 +1182,7 @@ void          OSTaskRegSet            (INT8U            prio,
 */
 
 void          OSTimeDly               (INT32U           ticks);
+void          OSTimeDlyTask           (INT8U prio, INT32U ticks);
 
 #if MT_TIME_DLY_HMSM_EN > 0u
 INT8U         OSTimeDlyHMSM           (INT8U            hours,
