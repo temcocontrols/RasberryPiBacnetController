@@ -1,140 +1,111 @@
-#ifdef BAS_TEMP
-#pragma inline
-#include <mem.h>
-#include <alloc.h>
-#include <time.h>
+/******************************************************************************
+ * File Name: mtkern2.cpp
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+ 
+/******************************************************************************
+ * INCLUDEs
+ *****************************************************************************/
+
+//#include <time.h>
 #include <graphics.h>
-#include "mouse.h"
-#include <windows.h>
+//#include "mouse.h"
+#include <stdio.h>
 #include "t3000def.h"
+#include "mt.h"
 #include "mtkernel.h"
 
+extern	task_struct tasks[NUM_TASKS];
+
 extern void UnhookHandlers(void);
-extern void interrupt int8_task_switch( __CPPARGS );
-extern void interrupt (*old_int8 )( __CPPARGS );
+extern void int8_task_switch( __CPPARGS );
 extern void set_semaphore_dos(void);
 extern void clear_semaphore_dos(void);
-extern void set_semaphore( unsigned *sem );
-extern void clear_semaphore( unsigned *sem );
+extern void set_semaphore( MT_EVENT *pevent );
+extern void clear_semaphore(MT_EVENT *pevent);
+#ifdef BAS_TEMP
 extern int decode( unsigned char *line, int size, signed char *buf )   ;
 extern int encode( unsigned char *line, int size , signed char *buf);
 extern int bioskey_new(int cmd);
 
-extern void interrupt ( *oldhandler)(__CPPARGS);
 extern int mode_text;
 extern int xscreen, yscreen;
 extern int dxscreen, dyscreen;
-extern unsigned  screen; // i/o semaphore
+#endif //BAS_TEMP
+extern MT_EVENT *  sem_screen; // i/o semaphore
+#ifdef BAS_TEMP
 extern char far *vid_mem;	// pointer to video memory
 extern int setvectint8;
+#endif //BAS_TEMP
 extern int line_style;
+#ifdef BAS_TEMP
 extern int i;
-extern unsigned oldss, oldsp;
 
 void mputs( char *str, int bkgnd, int frgnd );
 void mfarrealloc(char far **far_point, unsigned long nbytes);
-
+#endif //BAS_TEMP
 
 /* 	Make_task() returns false if the task cannot be added to the task queue,
 	otherwise, it returns true.	*/
 
-int make_task( taskptr task, char *stck, unsigned stck_size, unsigned id, void *ptr, int port )
+int make_task( task pTask, char *stck, unsigned stck_size, unsigned id, void *ptr, int port )
 {
-	int_regs *r;
-	if( ( id >= NUM_TASKS ) ) return 0;
+	MT_CPU_SR cpu_sr = 0;
+	
+	if( ( id >= NUM_TASKS ) ) 
+		return 0;
+	
 	disable();
-	// allocate space for the task
-	i=0;
-	if(id!=PROJ)
+	
+	if(id != PROJ)
 	{
-//	 tasks[id].stck =(unsigned char *) stck;
-	 if(ptr)
-	 {                 // simulate a call function where ptr is the argument
-							 // ptr - pointer to a object
-	  r = ( int_regs *  ) (stck + stck_size -	sizeof( int_regs ));
-	  r->eax   = 0;
-	  r->ip    = 0;
-	  r->cs    = FP_OFF(ptr);
-	  r->flags = FP_SEG(ptr);
-	  i = 8;
-//	  tasks[id].port_number = port;
-	  tasks[id].ps = &Routing_table[port].port_status_vars;
-	 }
-	 r = ( int_regs *  ) (stck + stck_size -	sizeof( int_regs ) - i );
-
-// initialize task stack
-	  tasks[id].sp = FP_OFF( ( int_regs far * ) r );
-		tasks[id].ss = FP_SEG( ( int_regs far * ) r );
-
-	  r->cs = FP_SEG(task);
-	  r->ip = FP_OFF(task);
-	// set up DS and ES
-	  r->ds = _DS;
-	  r->es = _ES;
-	// enable interrupts
-	  r->flags = 0x200;
-	}
-	else
-	{
-//	tasks[PROJ].stck =(char *) MK_FP(_SS,0);
-//	r = ( int_regs *  ) (tasks[PROJ].stck + (stck_size-60) -
-//										sizeof( int_regs ));
-
-	// initialize task stack
-	_BX=_SP;
-	_SP=_SP-200;
-	_AX=0x200;
-	asm 	push ax;
-	_AX=FP_SEG(task);
-	asm 	push ax;
-	_AX=FP_OFF(task);
-	asm push ax;
-
-	asm	push eax;
-	asm	push ebx;
-	asm	push ecx;
-	asm	push edx;
-	asm	push es;
-	asm	push ds;
-	asm	push esi;
-	asm	push edi;
-	asm	push bp;
-
-	_AX=_SP;
-	_SP=_BX;
-	tasks[PROJ].sp = _AX;
-	tasks[PROJ].ss = _SS;
-//	ss_proj = tasks[PROJ].ss;
-//	sp_proj = tasks[PROJ].sp;
+		if(ptr)
+		{
+#ifdef BAS_TEMP //TODO: Uncomment once Routing_table[] is enabled in Router.cpp
+			tasks[id].ps = &Routing_table[port].port_status_vars;
+#endif //BAS_TEMP
+		}
 	}
 
 	// set up new task's  CS and IP registers
 	tasks[id].status = SUSPENDED;
-	if( id==PROJ )
+	if(id == PROJ)
+	{
 		tasks[PROJ].status = READY;
+	}
 	enable();
+	
+	OSTaskCreate (pTask, NULL, (MT_STK*)stck, id);
+					 
 	return 1;
 }
 
 void exit_proj(void)
 {
-disable();
+	//TODO: Implementation commented. Please port it.
+#ifdef BAS_TEMP
+	disable();
 	_SS = oldss;
 	_SP = oldsp;
 	UnhookHandlers();
-enable();
-	asm {
-	pop bp
-	pop edi
-	pop esi
-	pop ds
-	pop es
-	pop edx
-	pop ecx
-	pop ebx
-	pop eax
-	iret
+	enable();
+	asm 
+	{
+		pop bp
+		pop edi
+		pop esi
+		pop ds
+		pop es
+		pop edx
+		pop ecx
+		pop ebx
+		pop eax
+		iret
 	}
+#endif //BAS_TEMP
 }
 
 //*************************************************************************
@@ -164,42 +135,52 @@ void prectangle(int ltopx,int ltopy,int rbottomx,int rbottomy,int color)
  pline(rbottomx,ltopy,rbottomx,rbottomy,color);
 }
 
+unsigned imagesize (int left, int top, int right, int bottom)
+{
+  // Returns the size in bytes of the memory area required to store
+  // a bit image.
+
+  return 2 * sizeof(Uint32) + // witdth, height
+    (right - left + 1) * (bottom - top + 1) * sizeof (Uint32);
+} // imagesize ()
+
 unsigned mimagesize(int ltopx, int ltopy, int rbottomx, int rbottomy)
 {
  unsigned l;
- asm push es;
- set_semaphore(&screen);
+ 
+ set_semaphore(sem_screen);
  l=imagesize(ltopx, ltopy, rbottomx, rbottomy);
- clear_semaphore(&screen);
- asm pop es;
+ clear_semaphore(sem_screen);
+ 
  return l;
 }
 
 void mgetimage(int ltopx, int ltopy, int rbottomx, int rbottomy, void *under1)
 {
- asm push es;
- set_semaphore(&screen);
+ set_semaphore(sem_screen);
+#ifdef BAS_TEMP //TODO: Uncomment
  getimage(ltopx, ltopy, rbottomx, rbottomy, under1);
- clear_semaphore(&screen);
- asm pop es;
+#endif //BAS_TEMP
+ clear_semaphore(sem_screen);
 }
 
 void mputimage(int ltopx, int ltopy, void *under1, int Copy_put)
 {
- asm push es;
- set_semaphore(&screen);
- if(under1)
+ set_semaphore(sem_screen);
+#ifdef BAS_TEMP //TODO: Uncomment
+if(under1)
   putimage(ltopx, ltopy, under1, Copy_put);
- clear_semaphore(&screen);
- asm pop es;
+#endif //BAS_TEMP
+ clear_semaphore(sem_screen);
 }
 
 void mgetimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 {
- set_semaphore(&screen);
+ set_semaphore(sem_screen);
  for(int i=ltopy; i<=rbottomy;i++)
 	for(int j=ltopx; j<=rbottomx;j++)
 		{
+#ifdef BAS_TEMP //TODO: Understand and replace
 			asm {
 				mov ah,0dh
 				mov bh,0
@@ -208,16 +189,18 @@ void mgetimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 				int 10h
 				}
 			*p++ = _AL;
+#endif //BAS_TEMP
 		}
- clear_semaphore(&screen);
+ clear_semaphore(sem_screen);
 }
 
 void mputimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 {
- set_semaphore(&screen);
+ set_semaphore(sem_screen);
  for(int i=ltopy; i<=rbottomy;i++)
 	 for(int j=ltopx; j<=rbottomx;j++)
 		 {
+#ifdef BAS_TEMP //TODO: Understand and replace
 			_AL=*p++;
 			asm {
 				mov ah,0ch
@@ -226,11 +209,12 @@ void mputimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 				mov cx,j
 				int 10h
 				}
+#endif //BAS_TEMP
 		 }
- clear_semaphore(&screen);
+ clear_semaphore(sem_screen);
 }
 
-
+#ifdef BAS_TEMP
 void mputch( int c )
 {
 	 putch( c );
@@ -238,6 +222,7 @@ void mputch( int c )
 
 void movetoxy(int x, int y)
 {
+#ifdef BAS_TEMP //TODO: Understand and replace
 	 asm {
 		push ax
 		push bx
@@ -253,13 +238,15 @@ void movetoxy(int x, int y)
 		pop bx
 		pop ax
 	 }
+#endif // BAS_TEMP
 }
 
 void hidecur(void)
 {
 	if(mode_text)
 	{
-	 set_semaphore(&screen);
+	 set_semaphore(sem_screen);
+#ifdef BAS_TEMP //TODO: Understand and replace
 	 asm {
 		push ax
 		push bx
@@ -273,12 +260,14 @@ void hidecur(void)
 		pop bx
 		pop ax
 	}
-	clear_semaphore(&screen);
+#endif //BAS_TEMP
+	clear_semaphore(sem_screen);
  }
 }
 
 void getxy(int *x, int *y)
 {
+#ifdef BAS_TEMP //TODO: Understand and replace
 	 union REGS regs;
 
 	 asm {
@@ -290,6 +279,7 @@ void getxy(int *x, int *y)
 	 }
 	 *y=(int)_DH;
 	 *x=(int)_DL;
+#endif //BAS_TEMP
 }
 
 int mgets(char far *str,int viz, int bkgnd, int frgnd)
@@ -300,7 +290,7 @@ int mgets(char far *str,int viz, int bkgnd, int frgnd)
 		int i;
 		char ch[2];
 		} key;
-
+#ifdef BAS_TEMP //TODO: Understand and replace
 	asm {
 	 mov ah,03h
 	 mov bh,0
@@ -310,8 +300,8 @@ int mgets(char far *str,int viz, int bkgnd, int frgnd)
 	 inc dl
 	 mov BYTE PTR x,dl
 	}
-
- char far *p;
+#endif //BAS_TEMP
+ char *p;
  char ret=0;
  p=str;
  *str = '\0';
@@ -611,16 +601,16 @@ void mfarfree(void *far_point)
 
 void mgettext(int left, int top, int right, int bottom, void *dest)
 {
- set_semaphore(&screen);
+ set_semaphore(sem_screen);
  gettext(left,top,right,bottom,(void *)dest);
- clear_semaphore(&screen);
+ clear_semaphore(sem_screen);
 }
 
 void mputtext(int left, int top, int right, int bottom, void *source)
 {
- set_semaphore(&screen);
+ set_semaphore(sem_screen);
  puttext(left,top,right,bottom,(void *)source);
- clear_semaphore(&screen);
+ clear_semaphore(sem_screen);
 }
 
 void mclrscr(char x1, char y1, char x2, char y2, char col)

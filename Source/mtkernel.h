@@ -141,17 +141,17 @@ typedef struct {
 	int        sleep;
 	unsigned   pri;
 	long       delay_time;
-	//PORT_STATUS_variables *ps;
+	PORT_STATUS_variables *ps;
 } task_struct;
 
-#ifdef BAS_TEMP
-typedef int ( far *taskptr ) (void);
+typedef void ( *task ) (void *p_arg);
 
+#ifdef BAS_TEMP
 #ifdef MTKERNEL
 
 void interrupt (*old_int8 )( __CPPARGS );
 
-int make_task( taskptr task, char *stck, unsigned stck_size, unsigned id, void *ptr=NULL, int port=0 );
+int make_task( task pTask, char *stck, unsigned stck_size, unsigned id, void *ptr=NULL, int port=0 );
 void interrupt multitask( void );
 void init_tasks( void );
 void kill_task( int id );
@@ -257,7 +257,7 @@ extern void restore_upper_memory_link(void);
 extern void set_upper_memory_link(void);
 
 extern unsigned  t3000_flag; // i/o semaphore
-extern unsigned  screen; // i/o semaphore
+extern MT_EVENT *  sem_screen; // i/o semaphore
 //extern unsigned  serial_wait[2]; // i/o semaphore
 extern int local_request(int);
 

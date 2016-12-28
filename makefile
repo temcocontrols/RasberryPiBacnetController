@@ -1,8 +1,7 @@
 #Start of the makefile
 
 CXX = g++
-LDFLAGS = -lwiringPi -pthread
-
+LDFLAGS = -lwiringPi -pthread -lgraph
 VPATH = ./Source/OS:./Source:./:./OBJ
 
 OUTPUT_OPTION = -o OBJ/$@
@@ -16,7 +15,7 @@ Objects := $(notdir $(patsubst %.cpp,%.o,$(wildcard Source/*.cpp))) \
 
 
 
-all: $(Target)
+all: $(Target) 
 
 $(Target): $(Objects)
 	$(CXX) $(CXXFLAGS) -o $(Target) $(addprefix OBJ/,$(Objects)) $(LDFLAGS)

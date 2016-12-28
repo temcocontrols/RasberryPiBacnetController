@@ -14,7 +14,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include "mt.h"
-//#include "t3000def.h"
+#include "t3000def.h"
 #include "mtkernel.h"
 //#include "aio.h"
 //#include "baseclas.h"
@@ -105,7 +105,7 @@ extern task_struct tasks[NUM_TASKS];
 extern unsigned  read_mon_flag; // i/o semaphore
 extern unsigned  dos_flag; // i/o semaphore
 extern unsigned  dos_host;
-extern unsigned  screen; // i/o semaphore
+extern MT_EVENT *  sem_screen; // i/o semaphore
 //extern unsigned  memory; // i/o semaphore
 extern unsigned  t3000_flag; // i/o semaphore
 #endif //BAS_TEMP

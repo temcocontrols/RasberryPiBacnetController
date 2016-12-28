@@ -5,6 +5,7 @@
 #include <string.h>
 #include "mt.h"
 #include "app_cfg.h"
+#include "t3000def.h"
 #include "mtkernel.h"
 #ifdef BAS_TEMP
 #include <time.h>
@@ -13,7 +14,7 @@
 #include "mouse.h"
 #include <windows.h>
 #include "aio.h"
-#include "t3000def.h"
+
 #include "vga12.h"
 //#include "netbios.h"
 #include "color.hpp"
@@ -105,10 +106,10 @@ int xscreen=10, yscreen=10;
 int dxscreen=1, dyscreen=0;
 
 //unsigned ss_proj,	sp_proj;
-
+#endif //BAS_TEMP
 //unsigned int statistic_period, statistic[3];
 int line_style=1;
-
+#ifdef BAS_TEMP
 //int_regs *r;
 
 int time_key=1;
@@ -171,16 +172,16 @@ void (*real_oldHandler)(void);
 
 #endif //BAS_TEMP
 task_struct tasks[NUM_TASKS];
-#ifdef BAS_TEMP
+
 unsigned  read_mon_flag = 0; // i/o semaphore
 unsigned  dos_flag = 0; // i/o semaphore
 unsigned  dos_host = 0;
 //unsigned  serial_wait[2] = { 0, 0 }; // i/o semaphore
-unsigned  screen = 0; // i/o semaphore
+MT_EVENT *  sem_screen = 0; // i/o semaphore
 //unsigned  memory = 0; // i/o semaphore
 unsigned  t3000_flag = 0; // i/o semaphore
 unsigned  print_sem = 0; // i/o semaphore
-
+#ifdef BAS_TEMP
 char far *vid_mem;	// pointer to video memory
 #endif //BAS_TEMP
 int tswitch = 0;      		// task index
@@ -259,7 +260,7 @@ int main(int argc, char *argv[])
 	
 	err =
 	    OSTaskCreate(MyTask, sTask1,
-			 (void *)&Stk1[STK_HEAD(APP_TASK_1_STK_SIZE)],
+			 (MT_STK*)&Stk1[STK_HEAD(APP_TASK_1_STK_SIZE)],
 			 APP_TASK_1_PRIO);
 
 	if (err != MT_ERR_NONE) {
