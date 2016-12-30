@@ -10,6 +10,7 @@
  * INCLUDEs
  *****************************************************************************/
 
+#include <pthread.h>
 //#include <time.h>
 #include <graphics.h>
 //#include "mouse.h"
@@ -19,6 +20,7 @@
 #include "mtkernel.h"
 
 extern	task_struct tasks[NUM_TASKS];
+extern  pthread_t   threadTask[ MT_LOWEST_PRIO ];
 
 extern void UnhookHandlers(void);
 extern void int8_task_switch( __CPPARGS );
@@ -85,27 +87,17 @@ int make_task( task pTask, char *stck, unsigned stck_size, unsigned id, void *pt
 
 void exit_proj(void)
 {
-	//TODO: Implementation commented. Please port it.
-#ifdef BAS_TEMP
+	MT_CPU_SR cpu_sr = 0;
+	
+	int *oldstate;
+	int *oldtype;
+	
 	disable();
-	_SS = oldss;
-	_SP = oldsp;
 	UnhookHandlers();
+	pthread_setcancelstate (PTHREAD_CANCEL_ENABLE,   oldstate);
+	pthread_setcanceltype  (PTHREAD_CANCEL_DEFERRED, oldtype);
+	pthread_cancel (threadTask[OSTCBPrioThreadIdx[PROJ]]);
 	enable();
-	asm 
-	{
-		pop bp
-		pop edi
-		pop esi
-		pop ds
-		pop es
-		pop edx
-		pop ecx
-		pop ebx
-		pop eax
-		iret
-	}
-#endif //BAS_TEMP
 }
 
 //*************************************************************************
@@ -114,71 +106,72 @@ void exit_proj(void)
 
 void pline(int x1,int y1,int x2,int y2,int color)
 {
- int i=getcolor();
- setcolor(color);
- if(line_style==1)
-	setlinestyle(SOLID_LINE, 1, 1);
- else
-	setlinestyle(DOTTED_LINE, 1, 1);
+	int i=getcolor();
+	setcolor(color);
+	if(line_style==1)
+		setlinestyle(SOLID_LINE, 1, 1);
+	else
+		setlinestyle(DOTTED_LINE, 1, 1);
 
- moveto(x1,y1);
- lineto(x2,y2);
- setcolor(i);
- setlinestyle(SOLID_LINE, 1, 1);
+	moveto(x1,y1);
+	lineto(x2,y2);
+	setcolor(i);
+	setlinestyle(SOLID_LINE, 1, 1);
 }
 
 void prectangle(int ltopx,int ltopy,int rbottomx,int rbottomy,int color)
 {
- pline(ltopx,ltopy,rbottomx,ltopy,color);
- pline(ltopx,ltopy,ltopx,rbottomy,color);
- pline(ltopx,rbottomy,rbottomx,rbottomy,color);
- pline(rbottomx,ltopy,rbottomx,rbottomy,color);
+	pline(ltopx,ltopy,rbottomx,ltopy,color);
+	pline(ltopx,ltopy,ltopx,rbottomy,color);
+	pline(ltopx,rbottomy,rbottomx,rbottomy,color);
+	pline(rbottomx,ltopy,rbottomx,rbottomy,color);
 }
 
 unsigned imagesize (int left, int top, int right, int bottom)
 {
-  // Returns the size in bytes of the memory area required to store
-  // a bit image.
+	// Returns the size in bytes of the memory area required to store
+	// a bit image.
 
-  return 2 * sizeof(Uint32) + // witdth, height
-    (right - left + 1) * (bottom - top + 1) * sizeof (Uint32);
+	return 2 * sizeof(Uint32) + // witdth, height
+			(right - left + 1) * (bottom - top + 1) * sizeof (Uint32);
 } // imagesize ()
 
 unsigned mimagesize(int ltopx, int ltopy, int rbottomx, int rbottomy)
 {
- unsigned l;
- 
- set_semaphore(sem_screen);
- l=imagesize(ltopx, ltopy, rbottomx, rbottomy);
- clear_semaphore(sem_screen);
- 
- return l;
+	unsigned l;
+
+	set_semaphore(sem_screen);
+	l=imagesize(ltopx, ltopy, rbottomx, rbottomy);
+	clear_semaphore(sem_screen);
+
+	return l;
 }
 
 void mgetimage(int ltopx, int ltopy, int rbottomx, int rbottomy, void *under1)
 {
- set_semaphore(sem_screen);
+	set_semaphore(sem_screen);
 #ifdef BAS_TEMP //TODO: Uncomment
- getimage(ltopx, ltopy, rbottomx, rbottomy, under1);
+	getimage(ltopx, ltopy, rbottomx, rbottomy, under1);
 #endif //BAS_TEMP
- clear_semaphore(sem_screen);
+	clear_semaphore(sem_screen);
 }
 
 void mputimage(int ltopx, int ltopy, void *under1, int Copy_put)
 {
- set_semaphore(sem_screen);
+	set_semaphore(sem_screen);
 #ifdef BAS_TEMP //TODO: Uncomment
-if(under1)
-  putimage(ltopx, ltopy, under1, Copy_put);
+	if(under1)
+		putimage(ltopx, ltopy, under1, Copy_put);
 #endif //BAS_TEMP
- clear_semaphore(sem_screen);
+	clear_semaphore(sem_screen);
 }
 
 void mgetimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 {
- set_semaphore(sem_screen);
- for(int i=ltopy; i<=rbottomy;i++)
-	for(int j=ltopx; j<=rbottomx;j++)
+	set_semaphore(sem_screen);
+	for(int i=ltopy; i<=rbottomy;i++)
+	{
+		for(int j=ltopx; j<=rbottomx;j++)
 		{
 #ifdef BAS_TEMP //TODO: Understand and replace
 			asm {
@@ -187,19 +180,21 @@ void mgetimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 				mov dx,i
 				mov cx,j
 				int 10h
-				}
+			}
 			*p++ = _AL;
 #endif //BAS_TEMP
 		}
- clear_semaphore(sem_screen);
+	}
+	clear_semaphore(sem_screen);
 }
 
 void mputimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 {
- set_semaphore(sem_screen);
- for(int i=ltopy; i<=rbottomy;i++)
-	 for(int j=ltopx; j<=rbottomx;j++)
-		 {
+	set_semaphore(sem_screen);
+	for(int i=ltopy; i<=rbottomy;i++)
+	{
+		for(int j=ltopx; j<=rbottomx;j++)
+		{
 #ifdef BAS_TEMP //TODO: Understand and replace
 			_AL=*p++;
 			asm {
@@ -208,22 +203,22 @@ void mputimage_10(int ltopx, int ltopy, int rbottomx, int rbottomy, char *p)
 				mov dx,i
 				mov cx,j
 				int 10h
-				}
+			}
 #endif //BAS_TEMP
-		 }
- clear_semaphore(sem_screen);
+		}
+	}
+	clear_semaphore(sem_screen);
 }
 
-#ifdef BAS_TEMP
 void mputch( int c )
 {
-	 putch( c );
+	putchar( c );
 }
 
 void movetoxy(int x, int y)
 {
 #ifdef BAS_TEMP //TODO: Understand and replace
-	 asm {
+	asm {
 		push ax
 		push bx
 		push dx
@@ -237,10 +232,10 @@ void movetoxy(int x, int y)
 		pop dx
 		pop bx
 		pop ax
-	 }
+	}
 #endif // BAS_TEMP
 }
-
+#ifdef BAS_TEMP
 void hidecur(void)
 {
 	if(mode_text)

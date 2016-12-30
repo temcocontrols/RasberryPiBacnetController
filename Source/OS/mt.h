@@ -715,6 +715,8 @@ MT_EXT  MT_TCB           *OSTCBList;                       /* Pointer to doubly 
 MT_EXT  MT_TCB           *OSTCBPrioTbl[MT_LOWEST_PRIO + 1u];    /* Table of pointers to created TCBs   */
 MT_EXT  MT_TCB            OSTCBTbl[MT_MAX_TASKS + MT_N_SYS_TASKS];   /* Table of TCBs                  */
 
+MT_EXT  INT32S            OSTCBPrioThreadIdx[MT_LOWEST_PRIO + 1u];    /* Table of thread Index   */
+
 #if MT_TICK_STEP_EN > 0u
 MT_EXT  INT8U             OSTickStepState;          /* Indicates the state of the tick step feature    */
 #endif

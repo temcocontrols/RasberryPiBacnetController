@@ -32,7 +32,7 @@ static pthread_cond_t	cvThreadWrapper;
 static pthread_cond_t	grcvThread[ MT_LOWEST_PRIO ];
 
 /* Array of threads */
-static pthread_t	threadTask[ MT_LOWEST_PRIO ];
+pthread_t	threadTask[ MT_LOWEST_PRIO ];
 
 /* Context switching control mutex */
 static pthread_mutex_t 	mutThread;
@@ -479,6 +479,7 @@ void OSTCBInitHook(MT_TCB *ptcb)
 
 	/* Store index of thread and condition variable on stk for use in ctx switching */
 	pFuncInfo->nThreadIdx = nNumThreadsCreated;
+	OSTCBPrioThreadIdx[ptcb->OSTCBPrio] = pFuncInfo->nThreadIdx;
 	nNumThreadsCreated++;
 
 	/* Initialize thread condition variable and create thread */
