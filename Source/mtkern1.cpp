@@ -10,6 +10,7 @@
  * INCLUDEs
  *****************************************************************************/
 
+#include <pthread.h>
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -101,14 +102,14 @@ extern int int_dos;
 extern unsigned real_ss;
 #endif //BAS_TEMP
 extern task_struct tasks[NUM_TASKS];
-#ifdef BAS_TEMP
-extern unsigned  read_mon_flag; // i/o semaphore
-extern unsigned  dos_flag; // i/o semaphore
+
+extern MT_EVENT *  read_mon_flag; // i/o semaphore
+extern MT_EVENT *  dos_flag; // i/o semaphore
 extern unsigned  dos_host;
 extern MT_EVENT *  sem_screen; // i/o semaphore
 //extern unsigned  memory; // i/o semaphore
-extern unsigned  t3000_flag; // i/o semaphore
-#endif //BAS_TEMP
+extern MT_EVENT *  t3000_flag; // i/o semaphore
+
 extern int tswitch;      		// task index
 #ifdef BAS_TEMP
 extern int setvectint8;
@@ -117,6 +118,7 @@ extern char timecount;
 extern char run_board_flag;
 extern int def_macro;
 #endif //BAS_TEMP
+extern  pthread_t   threadTask[ MT_LOWEST_PRIO ];
 
 #ifdef TEST
  char *num, *a = "0";
@@ -140,7 +142,6 @@ void int8_task_switch()
 #ifdef BAS_TEMP
 	if(++timecount >= 8)
 	{
-		oldhandler();
 		disable();
 		register int i;
 		timecount = 0;
@@ -161,10 +162,6 @@ void int8_task_switch()
 	else
 	{
 		disable();
-		asm mov al, 20h
-		asm out 20h, al
-		asm jmp $+2
-		asm nop
 		register int i;
 
 		for( i=NETWORK1; i<MSTP_MASTER+RS485TASKS; i++ )
@@ -185,21 +182,20 @@ void int8_task_switch()
 		 }
 		}
 //		if (run_board_flag || int_occured || int_dos)
-		if (run_board_flag || int_occured )
+		//if (run_board_flag || int_occured )
+		if (run_board_flag)
 		{
-		 enable();return;
+		 enable();
+		 return;
 		}
 
-		tasks[tswitch].sp = _SP;	// save current task's stack
-		tasks[tswitch].ss = _SS;
 		if(tasks[tswitch].status == RUNNING )
 		 tasks[tswitch].status = READY;
 		for( i=NETWORK1; i<MSTP_MASTER+RS485TASKS; i++ )
 		{
 		 if( tasks[i].status == READY ) tswitch = i;
 		}
-		_SP = tasks[tswitch].sp;
-		_SS = tasks[tswitch].ss;
+
 		tasks[tswitch].status = RUNNING; // state is running
 		enable();
 		return;
@@ -278,11 +274,11 @@ void int8_task_switch()
 
 	}
 
-	if (int_occured)
-	{
-	 enable();
-	 return;
-	}
+	//if (int_occured)
+	//{
+	// enable();
+	// return;
+	//}
 
 	register int i;
 
@@ -383,8 +379,6 @@ void int8_task_switch()
 	 return;
 	}
 
-	tasks[tswitch].ss = _SS;	// save current task's stack
-	tasks[tswitch].sp = _SP;
 	// if current task was running, then change its state to READY
 	if(tasks[tswitch].status == RUNNING )
 	{
@@ -413,8 +407,7 @@ void int8_task_switch()
 */
 	 if( !tasking) { // stop tasking
 			disable();
-			_SS = oldss;
-			_SP = oldsp;
+			
 //			setvect( 8, old_int8 );
 			UnhookHandlers();
 //			free_all();
@@ -448,11 +441,11 @@ void int8_task_switch()
 
 	// switch task to a new task
 
-	_SP = tasks[tswitch].sp;
-	_SS = tasks[tswitch].ss;
 	tasks[tswitch].status = RUNNING; // state is running
 	enable();
 #endif //BAS_TEMP
+
+//TODO: Need to call OS_Schdule
 };
 
 /* This is the manual task switcher which a program can call to force a task
@@ -552,22 +545,22 @@ void interrupt multitask( void )
 // Kill a task. ( i.e., make it's state DEAD. )
 void kill_task( int id )
 {
+	int *oldstate;
+	int *oldtype;
+	
 	tasks[id].status = DEAD;
-	OSTaskSuspend (id);
-#ifdef BAS_TEMP
-	//TODO: Clear and Unlink OS TCB from TCB list
-	MT_CPU_SR cpu_sr = 0;
-	disable();
-	tasks[id].status = DEAD;
-	enable();
+	
+	pthread_setcancelstate (PTHREAD_CANCEL_ENABLE,   oldstate);
+	pthread_setcanceltype  (PTHREAD_CANCEL_DEFERRED, oldtype);
+	pthread_cancel (threadTask[OSTCBPrioThreadIdx[id]]);
+	
+	//TODO: Might not be required
 	task_switch();
-#endif //BAS_TEMP
 }
 
 // Initialize the task control structures
 void init_tasks( void )
 {
-
 	for( i=0; i<NUM_TASKS; i++ )
 	{
 //	 tasks[i].status = SUSPENDED;
@@ -630,50 +623,6 @@ void set_semaphore( MT_EVENT *pevent )
 	tasks[tswitch].status  = BLOCKED;
 }
 
-
-void set_semaphore_dos(void)
-{
-#ifdef BAS_TEMP
-	 disable();
-/*
-	asm {
-				push es
-				mov ah,34h
-				int 21h
-				mov ax,es:[bx]
-			 }
-				ptr_dos_flag=(char *)MK_FP(_ES,_BX);
-	asm		pop es
-*/
-//	 while(*ptr_dos_flag)
-	 while(dos_flag && dos_host != tswitch)
-	 {
-//			semblock( tswitch, &io_out );
-			tasks[tswitch].status  = BLOCKED;
-			tasks[tswitch].pending = &dos_flag;
-			task_switch();
-			disable(); // task switch will enable interrupts, so they need
-								 //   to be turned off again
-	 }
-	 dos_flag = 1;
-	 dos_host = tswitch;
-	 enable();
-#endif //BAS_TEMP
-}
-
-// Release a semaphore
-void clear_semaphore_dos(void)
-{
-#ifdef BAS_TEMP
-	disable();
-	tasks[tswitch].pending = NULL;
-	dos_flag = 0;
-	if( restart( &dos_flag ) )
-		task_switch();
-	enable();
-#endif //BAS_TEMP
-}
-
 // Release a semaphore
 void clear_semaphore(MT_EVENT *pevent)
 {
@@ -681,19 +630,23 @@ void clear_semaphore(MT_EVENT *pevent)
 	tasks[tswitch].status  = READY;
 }
 
+void set_semaphore_dos(void)
+{
+	set_semaphore(dos_flag);
+}
+
+// Release a semaphore
+void clear_semaphore_dos(void)
+{
+	clear_semaphore(dos_flag);
+}
+
 void HookHandlers(void)
 {
-#ifdef BAS_TEMP
-	oldhandler = getvect(8);
-	setvect(8, (void interrupt (*)( ... ))int8_task_switch);
-#endif //BAS_TEMP
 	setvectint8 = 1;	
 }
 
 void UnhookHandlers(void)
 {
-#ifdef BAS_TEMP
-	//  set new vectors
-	setvect(8, (void interrupt (*)( ... ))oldhandler);
-#endif //BAS_TEMP
+
 }

@@ -173,14 +173,14 @@ void (*real_oldHandler)(void);
 #endif //BAS_TEMP
 task_struct tasks[NUM_TASKS];
 
-unsigned  read_mon_flag = 0; // i/o semaphore
-unsigned  dos_flag = 0; // i/o semaphore
+MT_EVENT *  read_mon_flag = 0; // i/o semaphore
+MT_EVENT *  dos_flag = 0; // i/o semaphore
 unsigned  dos_host = 0;
 //unsigned  serial_wait[2] = { 0, 0 }; // i/o semaphore
 MT_EVENT *  sem_screen = 0; // i/o semaphore
 //unsigned  memory = 0; // i/o semaphore
-unsigned  t3000_flag = 0; // i/o semaphore
-unsigned  print_sem = 0; // i/o semaphore
+MT_EVENT *  t3000_flag = 0; // i/o semaphore
+MT_EVENT *  print_sem = 0; // i/o semaphore
 #ifdef BAS_TEMP
 char far *vid_mem;	// pointer to video memory
 #endif //BAS_TEMP

@@ -15,6 +15,9 @@
 #include <graphics.h>
 //#include "mouse.h"
 #include <stdio.h>
+#include <fcntl.h> 
+#include <sys/ioctl.h>
+#include <linux/kd.h>
 #include <stdbool.h>
 #include <string.h>
 #include <termio.h>
@@ -61,7 +64,7 @@ static struct termios original;
 
 bool keyPressed(int *character)
 {
-    // If this is the first time the function is called, change the stdin
+    // CAUTION: If this is the first time the function is called, change the stdin
     // stream so that we get each character when the keys are pressed and
     // and so that character aren't echoed to the screen when the keys are
     // pressed.
@@ -135,6 +138,47 @@ void keyboardReset(void)
         // we found them.
         tcsetattr(stdin_fd, TCSANOW, &original);
     }
+}
+
+int bioskey(int command)
+{
+	//TODO: Look at return value compatiblitity with DOS
+	int *character;
+	bool pressed;
+	
+	switch (command)
+	{
+		case 0x00:
+			pressed = keyPressed(character);
+			return *character;
+		case 0x01:
+			pressed = keyPressed(character);
+			return pressed;
+		case 0x02:
+		
+			int fd = open("/dev/tty0", O_NOCTTY);
+			if (fd == -1)
+			{
+				perror("open");
+				return -1;
+			}
+			int state = 0;
+			// Get the keyboard state into the state variable.
+			if (-1 == ioctl(fd, KDGKBLED, &state))
+			{
+				perror("ioctl");
+				close(fd);
+				return -1;
+			}
+	
+			return (state << 4);
+	}
+}
+
+int bioskey_new(int cmd)
+{
+	//TODO: To be ported
+	bioskey(cmd);
 }
 
 /* 	Make_task() returns false if the task cannot be added to the task queue,
