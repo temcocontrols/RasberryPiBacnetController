@@ -1,39 +1,32 @@
 #define MTKERNEL
 
-//#pragma inline
 #include <stdio.h>
-#ifdef BAS_TEMP
-#include <dos.h>
-#include <mem.h>
-#include <alloc.h>
 #include <stdlib.h>
-#include <conio.h>
 #include <string.h>
+#include "mt.h"
+#include "app_cfg.h"
+#include "t3000def.h"
+#include "mtkernel.h"
+#ifdef BAS_TEMP
 #include <time.h>
 #include <sys\timeb.h>
-#include <bios.h>
 #include <graphics.h>
 #include "mouse.h"
 #include <windows.h>
 #include "aio.h"
-#endif //BAS_TEMP
-#include "t3000def.h"
-#include "mtkernel.h"
-#ifdef BAS_TEMP
+
 #include "vga12.h"
 //#include "netbios.h"
 #include "color.hpp"
 #include "colormap.hpp"
 #include "rs485.h"
 #include "t3000hlp.h"
-#endif //BAS_TEMP
+
 
 #define EGAVGA 9
 #define TEXT_FOND_COLOR White
 
-extern void InitLinuxPort();
 
-#ifdef BAS_TEMP
 extern void mclrscr(char x1, char y1, char x2, char y2, char col);
 extern void get16( rgb * pal, int nclrs );
 
@@ -92,7 +85,6 @@ char huge stack_ServerTSM[stack_ServerTSM_SIZE];
 char huge stack_PTP[stack_PTP_SIZE*RS232TASKS];
 
 void interrupt ( *oldhandler)(__CPPARGS);
-
 //void interrupt ( *oldhandler_mouse)(__CPPARGS);
 
 //extern "C" void setcallback(void);
@@ -110,15 +102,14 @@ char huge stack_NETWORK[stack_NETWORK_SIZE];
 /* Timer interrupt task sheduller */
 //static unsigned pri,i,j;
 //unsigned char *ptr_dos_flag;
-#endif //BAS_TEMP
 int xscreen=10, yscreen=10;
 int dxscreen=1, dyscreen=0;
-#ifdef BAS_TEMP
-//unsigned ss_proj,	sp_proj;
 
+//unsigned ss_proj,	sp_proj;
+#endif //BAS_TEMP
 //unsigned int statistic_period, statistic[3];
 int line_style=1;
-
+#ifdef BAS_TEMP
 //int_regs *r;
 
 int time_key=1;
@@ -178,37 +169,30 @@ unsigned real_ss;
 real_mode_str real_mode_callback;
 real_mode_str real_mode;
 void (*real_oldHandler)(void);
-#endif //BAS_TEMP
 
+#endif //BAS_TEMP
 task_struct tasks[NUM_TASKS];
 
-#ifdef BAS_TEMP
-unsigned  read_mon_flag = 0; // i/o semaphore
-#endif //BAS_TEMP
-unsigned  dos_flag = 0; // i/o semaphore
+MT_EVENT *  read_mon_flag = 0; // i/o semaphore
+MT_EVENT *  dos_flag = 0; // i/o semaphore
 unsigned  dos_host = 0;
 //unsigned  serial_wait[2] = { 0, 0 }; // i/o semaphore
-unsigned  screen = 0; // i/o semaphore
-#ifdef BAS_TEMP
+MT_EVENT *  sem_screen = 0; // i/o semaphore
 //unsigned  memory = 0; // i/o semaphore
-unsigned  t3000_flag = 0; // i/o semaphore
-unsigned  print_sem = 0; // i/o semaphore
-
+MT_EVENT *  t3000_flag = 0; // i/o semaphore
+MT_EVENT *  print_sem = 0; // i/o semaphore
+#ifdef BAS_TEMP
+char far *vid_mem;	// pointer to video memory
 #endif //BAS_TEMP
-char *vid_mem;	// pointer to video memory
-
-unsigned oldss, oldsp;
 int tswitch = 0;      		// task index
+#ifdef BAS_TEMP
 //static char tasking = 1;           // tasking system enabled
 //static char single_task = 0;       // single task flag off
 
-int setvectint8;
-#ifdef BAS_TEMP
 int communication;
 int gdriver, grmode, errorcode;
-#endif //BAS_TEMP
 char timecount;
-#ifdef BAS_TEMP
+
 char loaddesstart;
 struct timeb tb;
 
@@ -222,15 +206,80 @@ int indts;
 */
 #endif //BAS_TEMP
 
+//------------------------ Remove this sample after testing --------------------------
+#if MT_STK_GROWTH == 1u
+#define STK_HEAD(size) (size - 1u)
+#else
+#define STK_HEAD(size) (0)
+#endif
+extern unsigned int count_temp;
+/* Function common to all tasks */
+void MyTask(void *p_arg)
+{
+	char *sTaskName = (char *)p_arg;
+#if MT_CRITICAL_METHOD == 3
+	MT_CPU_SR cpu_sr = 0;
+#endif
+
+	while (1) {
+
+		/*
+		 * printf uses mutex to get terminal access, therefore
+		 * must enter critical section
+		 */
+
+		MT_ENTER_CRITICAL();
+		printf("Name: %s\n", sTaskName);
+		MT_EXIT_CRITICAL();
+
+		/* Delay so other tasks may execute. */
+		OSTimeDly(20);
+	}			/* while */
+}
+//--------------------------------------------------------------------
 //   /C /G /A /N=networknumber /D=NO
+
 int main(int argc, char *argv[])
 {
-    printf("Welcome to BAS\n");
-    InitLinuxPort();
+//------------------------ Remove this sample after testing --------------------------
+#if MT_CRITICAL_METHOD == 3
+	MT_CPU_SR cpu_sr = 0;
+#endif
+	INT8U err;
 
-    //Loop here. To be removed
-    while (1){}
+	/*
+	 * pthreads allocates its own memory for task stacks. This MT
+	 * linux port needs a minimum stack size in order to pass the
+	 * function information within the port.
+	 */
+	INT8U Stk1[APP_TASK_1_STK_SIZE];
 
+	char sTask1[] = "Task 1";
+
+	OSInit();
+	
+	err =
+	    OSTaskCreate(MyTask, sTask1,
+			 (MT_STK*)&Stk1[STK_HEAD(APP_TASK_1_STK_SIZE)],
+			 APP_TASK_1_PRIO);
+
+	if (err != MT_ERR_NONE) {
+		printf("OSTaskCreate() failed for %s: Err = %d\n", sTask1,
+		       (int)err);
+	}
+
+	MT_ENTER_CRITICAL();
+	printf("all threads created\n");
+	MT_EXIT_CRITICAL();
+	
+	OSStart();
+
+	MT_ENTER_CRITICAL();
+	printf("returned from OSStart()\n");
+	MT_EXIT_CRITICAL();
+
+	return 0;
+//------------------------------------------------------------------------------------
 #ifdef BAS_TEMP
 	text = ASCII_FONT;
 	interface_mode = MODE_TEXT;
@@ -301,7 +350,6 @@ int main(int argc, char *argv[])
 			}
 	}
 
-	//Kushal: Return video memory location A000h. Not required in Linux.
 	segA000 = FP_SEG(MK_FP(__SegA000,0));
 
 	init_tasks();
@@ -325,7 +373,6 @@ int main(int argc, char *argv[])
 // ********        end        ********
 // ***********************************
 
-	//HELP: Not understood if() part
 	if( !(bioskey(2)&0x40) )
 	{
 	 asm {
@@ -343,7 +390,6 @@ int main(int argc, char *argv[])
 	 delay(3000);
 	}
 
-	 //Kushal: Stroked font linked in
 	errorcode = registerbgifont(small_font);
 
 /* detect graphics hardware available */
@@ -493,5 +539,4 @@ int main(int argc, char *argv[])
 
 	cprintf("                                 End Program\n\r                 ");
 #endif //BAS_TEMP
-	return 0;
 }
