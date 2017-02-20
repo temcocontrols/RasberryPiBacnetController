@@ -1,17 +1,6 @@
-/******************************************************************************
- * File Name: mtkern1.cpp
- * Description: 
- *
- * Created:
- * Author:
- *****************************************************************************/
-
 #ifndef _MTKERNEL_H
+
 #define _MTKERNEL_H
- 
-/******************************************************************************
- * PREPROCESSOR
- *****************************************************************************/
 
 #define COD386
 
@@ -21,6 +10,7 @@
 	 #define __CPPARGS
 #endif
 
+#define MT_TICKS_PER_SEC (100)
 #define byte		unsigned char
 
 #define PROGRAM_INTERVAL 10000L
@@ -31,10 +21,18 @@
 
 #define RS485TASKS            1
 
-/******************************************************************************
- * USER DEFINED TYPES
- *****************************************************************************/
- 
+#define disable() do{ sigset_t mask; \
+                      sigemptyset( &mask ); \
+					  sigaddset( &mask, SIGALRM ); \
+					  sigprocmask( SIG_BLOCK, &mask, NULL ); \
+					  }while(0)
+						  
+#define enable() do{ sigset_t e_mask; \
+                      sigemptyset( &e_mask ); \
+					  sigaddset( &e_mask, SIGALRM ); \
+					  sigprocmask(SIG_UNBLOCK, &e_mask, NULL); \
+					  }while(0)
+
 typedef enum {
 					PROJ             = 0,
 					MISCELLANEOUS,
@@ -135,28 +133,37 @@ typedef struct {
 
 //#endif
 
+
+
 typedef struct {
 	task_state status;
+	unsigned   sp;
+	unsigned   ss;
 	unsigned   *pending;
 	int        sleep;
 	unsigned   pri;
 	long       delay_time;
 	PORT_STATUS_variables *ps;
-} task_struct;
+	} task_struct;
 
-typedef void ( *task ) (void *p_arg);
+typedef int ( *taskptr ) (void);
 
-#ifdef BAS_TEMP
+
 #ifdef MTKERNEL
-
+#ifdef BAS_TEMP
 void interrupt (*old_int8 )( __CPPARGS );
+#endif //BAS_TEMP
 
-int make_task( task pTask, char *stck, unsigned stck_size, unsigned id, void *ptr=NULL, int port=0 );
+int make_task( taskptr task, char *stck, unsigned stck_size, unsigned id, void *ptr=NULL, int port=0 );
+#ifdef BAS_TEMP
 void interrupt multitask( void );
+#endif //BAS_TEMP
 void init_tasks( void );
 void kill_task( int id );
+#ifdef BAS_TEMP
 void interrupt int8_task_switch( __CPPARGS );
 void interrupt task_switch( void );
+#endif //BAS_TEMP
 void mono_task( void );
 void set_semaphore_dos(void);
 void clear_semaphore_dos(void);
@@ -196,10 +203,12 @@ void mputchar( char ch, int bkgnd, int frgnd );
 extern int make_task( taskptr task, char *stck, unsigned stck_size, unsigned id, void *ptr=NULL, int port=0 );
 extern int bioskey_new(int cmd);
 extern	task_struct tasks[NUM_TASKS];
+#ifdef BAS_TEMP
 extern void mfarfree(HANDLE handle);
 extern void mfarfree(void *far_point);
 extern void mfarmalloc(char far **far_point, unsigned long nbytes, HANDLE& handle);
 extern void mfarmalloc(char far **far_point, unsigned long nbytes);
+#endif //BAS_TEMP
 extern void mcprintf( char *s, char *p );
 extern void mputtext(int left, int top, int right, int bottom, void *source);
 extern void mgettext(int left, int top, int right, int bottom, void *dest);
@@ -248,7 +257,9 @@ extern void resume_suspend( int, int );
 extern void blocked_suspended( int id );
 extern void blocked_resume( int id );
 extern void kill_task( int id );
+#ifdef BAS_TEMP
 extern void interrupt task_switch( void );
+#endif //BAS_TEMP
 extern void set_semaphore(unsigned *);
 extern void clear_semaphore(unsigned *);
 extern void set_semaphore_dos(void);
@@ -257,7 +268,7 @@ extern void restore_upper_memory_link(void);
 extern void set_upper_memory_link(void);
 
 extern unsigned  t3000_flag; // i/o semaphore
-extern MT_EVENT *  sem_screen; // i/o semaphore
+extern unsigned  screen; // i/o semaphore
 //extern unsigned  serial_wait[2]; // i/o semaphore
 extern int local_request(int);
 
@@ -281,5 +292,5 @@ extern int Lightcyan;         //11
 extern int Lightred;           //12
 extern int Yellow;               //14
 extern int Blue1;
-#endif //BAS_TEMP
+
 #endif	// _MTKERNEL_H

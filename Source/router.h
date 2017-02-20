@@ -1,6 +1,19 @@
+/******************************************************************************
+ * File Name: router.h
+ * 
+ * Description: 
+ *
+ * Created:
+ * Author:
+ *****************************************************************************/
+
 #ifndef _ROUTER_H
 #define _ROUTER_H
 
+/******************************************************************************
+ * PREPROCESSORs
+ *****************************************************************************/
+ 
 #define ESTABLISH_CONNECTION_NET  90
 #define ESTABLISH_CONNECTION_PORT 91
 
@@ -18,7 +31,6 @@
 //#define   NETBIOS_INSTALLED  	0x21
 //#define   NETBIOS_ACTIVE     	0x23
 
-
 #define UNREACHABLE            1     // 0x00000001
 #define TEMPORARY_UNREACHABLE  2     // 0x00000010
 #define USER_UNREACHABLE       7     // 0x00000111
@@ -28,40 +40,50 @@
 #define MAX_Routing_table      9
 #define MAX_NetSession         5
 
+/******************************************************************************
+ * USER DEFINED TYPEs
+ *****************************************************************************/
+ 
 typedef enum {
-	  Who_Is_Router_To_Network, I_Am_Router_To_Network, I_Could_Be_Router_To_Network,
-	  Reject_Message_To_Network, Router_Busy_To_Network, Router_Available_To_Network,
-	  Initialize_Routing_Table, Initialize_Routing_Table_Ack,
-	  Establish_Connection_To_Network, Disconnect_Connection_To_Network,
-	  I_Am_Router_To_Network_Prop=0x80
-	 } Network_Layer_Message_Type;
+	Who_Is_Router_To_Network, 
+	I_Am_Router_To_Network, 
+	I_Could_Be_Router_To_Network,
+	Reject_Message_To_Network, 
+	Router_Busy_To_Network, 
+	Router_Available_To_Network,
+	Initialize_Routing_Table, 
+	Initialize_Routing_Table_Ack,
+	Establish_Connection_To_Network, 
+	Disconnect_Connection_To_Network,
+	I_Am_Router_To_Network_Prop=0x80
+} Network_Layer_Message_Type;
 
 
 typedef struct {
-		char 		status;
-		char     service;
-		char     source;
-		char     dest;
-		int      network;
-		signed char *semaphore;
-		char        task;
-		char        *data;
-		int         id;
-		int         timeout;
-	} NetworkSession ;
+	char 		status;
+	char     service;
+	char     source;
+	char     dest;
+	int      network;
+	signed char *semaphore;
+	char        task;
+	char        *data;
+	int         id;
+	int         timeout;
+} NetworkSession ;
 
 struct reachable_networks {
-		 int   network;
-		 byte  router_address;
-		 byte  half_router_address;
-		 byte  status;
-	  };
+	int   network;
+	byte  router_address;
+	byte  half_router_address;
+	byte  status;
+};
 
 struct Port {
-	  byte address;
-	  int  network;
-	  struct reachable_networks networks_list[MAX_reachable_networks];
-	};
+	byte address;
+	int  network;
+	struct reachable_networks networks_list[MAX_reachable_networks];
+};
 
 // status :   0  - free
 //            0x01 Port_installed  ( 0000 0001 )
@@ -73,12 +95,12 @@ struct Port {
 //            ETHERNET             { 0010 0011 )
 
 typedef struct {
-		char 		status;
-		struct 	Port Port;
-		void 		*ptr;
-		int      task;
-		PORT_STATUS_variables port_status_vars;
-	} ROUTING_TABLE;
+	char 		status;
+	struct 	Port Port;
+	void 		*ptr;
+	int      task;
+	PORT_STATUS_variables port_status_vars;
+} ROUTING_TABLE;
 
 typedef struct
 {
@@ -98,8 +120,7 @@ extern ROUTING_TABLE Routing_table[MAX_Routing_table];
 extern char trigger_sequence[];
 extern int networkaddress;
 extern int NetworkAddress;
-
 extern int router(int service, int command, ROUTER_PARAMETERS *r=NULL, int	port_number=-1, int send=0);
-#endif
+#endif //ROUTER
 
-#endif
+#endif //_ROUTER_H
