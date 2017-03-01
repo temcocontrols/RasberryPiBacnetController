@@ -8,6 +8,16 @@
 #include "Variable.h"
 #include "VariablesModelDelegate.h"
 
+enum VariablesModelColumns
+{
+    NUM = 0,
+    FULL_LABEL = 1,
+    AUTO = 2,
+    VALUE = 3,
+    UNITS = 4,
+    LABEL = 5
+};
+
 class VariablesModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -25,6 +35,8 @@ public:
     QWidget* createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const;
     void setEditorData(const QModelIndex &index, QWidget *editor) const;
     void setDataFromEditor(QWidget *editor, const QModelIndex &index);
+
+    Variable getRowVariable(int row);
 
 private:
     VariablesModelDelegate* delegate;

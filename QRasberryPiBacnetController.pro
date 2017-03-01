@@ -19,13 +19,15 @@ SOURCES += main.cpp\
         MainWindow.cpp \
     VariablesDialog.cpp \
     VariablesModel.cpp \
-    VariablesModelDelegate.cpp
+    VariablesModelDelegate.cpp \
+    PRGReader.cpp
 
 HEADERS  += MainWindow.h \
     VariablesDialog.h \
     VariablesModel.h \
     Variable.h \
-    VariablesModelDelegate.h
+    VariablesModelDelegate.h \
+    PRGReader.h
 
 FORMS    += MainWindow.ui \
     VariablesDialog.ui

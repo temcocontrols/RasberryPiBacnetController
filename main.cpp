@@ -2,12 +2,17 @@
 #include <QMetaType>
 
 #include "VariablesDialog.h"
+#include "MainWindow.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    VariablesDialog d;
-    d.show();
+
+    MainWindow w;
+    w.show();
+
+    //VariablesDialog d;
+    //d.show();
 
     return a.exec();
 }

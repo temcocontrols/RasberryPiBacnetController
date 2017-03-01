@@ -3,15 +3,6 @@
 #include <QComboBox>
 #include <QLineEdit>
 
-enum VariablesModelColumns
-{
-    NUM = 0,
-    FULL_LABEL = 1,
-    AUTO = 2,
-    VALUE = 3,
-    UNITS = 4,
-    LABEL = 5
-};
 
 VariablesModel::VariablesModel(QObject* parent)
     : QAbstractTableModel(parent)
@@ -66,6 +57,11 @@ QVariant VariablesModel::headerData(int section, Qt::Orientation orientation, in
     }
 
     return QVariant();
+}
+
+Variable VariablesModel::getRowVariable (int row)
+{
+    return this->variables[row];
 }
 
 QVariant VariablesModel::data(const QModelIndex &index, int role) const

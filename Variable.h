@@ -67,8 +67,8 @@ const QVector<QPair<QString, QString>> digitalUnits = {
 
 enum VariableUnitType
 {
-    ANALOG = 0,
-    DIGITAL = 1
+    DIGITAL = 0,
+    ANALOG = 1,
 };
 
 typedef struct
@@ -96,6 +96,16 @@ union VariableValue
     VariableCommonValue value;
     VariableAnalogValue analogValue;
     VariableDigitalValue digitalValue;
+
+    VariableValue()
+    {
+        analogValue.unit = 0;
+        analogValue.value = 0;
+
+        digitalValue.inverted = 0;
+        digitalValue.unit = 0;
+        digitalValue.value = 0;
+    }
 
     bool operator==(const VariableValue& r) const
     {
